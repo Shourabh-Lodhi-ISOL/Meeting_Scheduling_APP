@@ -1,0 +1,639 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #dcdcdc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+header {
+  background-color: #020d18;
+  color: white;
+  padding: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: visible;
+  width: 80%;
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+nav {
+  width: 48%; 
+  background-color: #fbfbfb;
+  border-radius: 8px;
+}
+
+main {
+  width: 48%; 
+  background-color: #fbfbfb;
+  border-radius: 8px;
+} 
+
+main {
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+nav {
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+nav .add-more-btn,
+    .send-auth-btn {
+  width: 100%;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.add-more-btn,
+.schedule-btn,
+.send-auth-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 16px;
+  color: #fff;
+  background-color: #020d18;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-more-btn:hover,
+.schedule-btn:hover,
+.send-auth-btn:hover {
+  background-color: #1c1d1f;
+}
+
+.result {
+  margin-top: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.remove-container {
+  margin-top: 10px;
+  margin-left: 20px; 
+}
+
+.remove-btn.fa-solid.fa-circle-xmark {
+  position: absolute;
+  right: -2.5%;
+  top: 10%;
+  background: #fff;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  margin-top: 10px;
+  margin-right: -22px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+header {
+  background-color: #3b5998;
+  color: white;
+  padding: 20px;
+  width: 100%;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: visible;
+  width: 80%;
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+nav,
+main {
+  width: 48%;
+  box-sizing: border-box;
+}
+
+nav {
+  padding: 10px;
+}
+
+main {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #555; 
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.add-more-btn,
+.schedule-btn,
+.send-auth-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  font-size: 16px;
+  color: #fff;
+  background-color: #4caf50; 
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-more-btn:hover,
+.schedule-btn:hover,
+.send-auth-btn:hover {
+  background-color: #45a049; 
+}
+
+.result {
+  margin-top: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.remove-container {
+  margin-top: 10px;
+  margin-left: 20px;
+}
+
+.remove-btn {
+  position: absolute;
+  right: -5%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  cursor: pointer;
+} */
+
+
+
+
+
+
+
+
+
+
+
+
+/* body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+header {
+  background-color: #333;
+  color: #fff;
+  padding: 20px;
+  width: 100%;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: visible;
+  width: 80%;
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+nav,
+main {
+  width: 48%;
+  box-sizing: border-box;
+}
+
+nav {
+  padding: 20px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+}
+
+main {
+  padding: 20px;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+input {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.add-more-btn,
+.schedule-btn,
+.send-auth-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+  font-size: 18px;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-more-btn:hover,
+.schedule-btn:hover,
+.send-auth-btn:hover {
+  background-color: #0056b3;
+}
+
+.result {
+  margin-top: 20px;
+  text-align: center;
+  color: #333;
+  font-size: 18px;
+}
+
+.remove-container {
+  margin-top: 15px;
+  margin-left: 20px;
+}
+
+.remove-btn {
+  position: absolute;
+  right: -5%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  cursor: pointer;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  font-size: 14px;
+  color: #555;
+} */
+
+
+
+
+
+
+
+
+
+
+/* body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+header {
+  background-color: #3b5998;
+  color: white;
+  padding: 20px;
+  width: 100%;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: visible;
+  width: 80%;
+  max-width: 800px;
+  margin: 20px auto;
+}
+
+nav,
+main {
+  width: 48%;
+  box-sizing: border-box;
+}
+
+nav {
+  padding: 10px;
+}
+
+main {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #555; 
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.add-more-btn,
+.schedule-btn,
+.send-auth-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  font-size: 16px;
+  color: #fff;
+  background-color: #4caf50;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-more-btn:hover,
+.schedule-btn:hover,
+.send-auth-btn:hover {
+  background-color: #45a049;
+}
+
+.result {
+  margin-top: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.remove-container {
+  margin-top: 10px;
+  margin-left: 20px;
+}
+
+.remove-btn {
+  position: absolute;
+  right: -5%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  cursor: pointer;
+}
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+header {
+  background-color: #3b5998;
+  color: #fff;
+  padding: 20px;
+  width: 100%;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-sizing: border-box;
+  overflow: visible;
+  width: 80%;
+  max-width: 500px;
+  margin: 20px auto;
+}
+
+nav,
+main {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 20px;
+}
+
+nav {
+  padding: 20px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+}
+
+main {
+  padding: 20px;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.add-more-btn,
+.schedule-btn,
+.send-auth-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 15px;
+  font-size: 18px;
+  color: #fff;
+  background-color: #1877f2;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-more-btn:hover,
+.schedule-btn:hover,
+.send-auth-btn:hover {
+  background-color: #155aef;
+}
+
+.result {
+  margin-top: 20px;
+  text-align: center;
+  color: #333;
+  font-size: 18px;
+}
+
+.remove-container {
+  margin-top: 15px;
+  margin-left: 20px;
+}
+
+.remove-btn {
+  position: absolute;
+  right: -5%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  cursor: pointer;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  font-size: 14px;
+  color: #555;
+} */

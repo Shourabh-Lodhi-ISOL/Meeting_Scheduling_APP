@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Meeting</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header>
+    <h1>Schedule Meeting</h1>
+  </header>
+
+  <div class="container">
+    <nav>
+      <div id="calendarIdsContainer" class="form-group">
+        <label for="calendarIds">Attendees:</label>
+        <input type="text" name="calendarIds" required>
+      </div>
+      <button type="button" class="add-more-btn" onclick="addCalendarIdsField()">Add More Attendees</button>
+      <button type="button" class="send-auth-btn" onclick="sendAuthEmail()">Send Authentication Email</button>
+    </nav>
+
+
+    <main>
+      <form id="meetingForm" class="form">
+        <div class="form-group">
+          <label for="summary">Meeting Summary:</label>
+          <input type="text" id="summary" name="summary" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Meeting Description:</label>
+          <input type="text" id="description" name="description" required>
+        </div>
+
+        <div class="form-group">
+          <label for="startTime">Meeting Start Time:</label>
+          <input type="datetime-local" id="startTime" name="startTime" required>
+        </div>
+
+        <div class="form-group">
+          <label for="endTime">Meeting End Time:</label>
+          <input type="datetime-local" id="endTime" name="endTime" required>
+        </div>
+
+        <button type="button" class="schedule-btn" onclick="scheduleMeeting()">Schedule Meeting</button>
+      </form>
+    </main>
+  </div>
+
+  <div id="result" class="result"></div>
+
+  <!-- <script src="js/script.js"></script> -->
+  <script src="script.js"></script>
+
+</body>
+</html>
