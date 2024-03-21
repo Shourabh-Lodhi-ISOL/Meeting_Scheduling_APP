@@ -8,6 +8,21 @@ import { authenticate } from "@google-cloud/local-auth";
 import { google } from "googleapis";
 import nodemailer from "nodemailer";
 import env from "dotenv";
+// const msal = require('@azure/msal-node');
+// import msal from "@azure/msal-node";
+// import msal from '@azure/msal-node';
+import * as msal from '@azure/msal-node';
+
+
+
+import { ClientSecretCredential } from "@azure/identity"
+// import { AuthenticationProviderDefault } from "@microsoft/microsoft-graph-client"
+import pkg from '@microsoft/microsoft-graph-client';
+const { AuthenticationProviderDefault } = pkg;
+// const { ClientSecretCredential } = require("@azure/identity");
+// const { AuthenticationProviderDefault } = require("@microsoft/microsoft-graph-client");
+
+
 // REQUIRED NODE.JS MODULES ---END---
 
 
@@ -21,10 +36,15 @@ env.config();
 
 
 // SCOPES TO DEFINE THE ACCESS OF USERS GOOGLE CALENDAR ---START---
-const SCOPES = [
-  "https://www.googleapis.com/auth/calendar.readonly",
-  "https://www.googleapis.com/auth/calendar.events",
-];
+// const SCOPES = [
+//   "https://www.googleapis.com/auth/calendar.readonly",
+//   "https://www.googleapis.com/auth/calendar.events",
+// ];
+
+const SCOPES = ["openid", "User.Read", 
+"Calendars.ReadWrite", "offline_access"];
+
+
 // SCOPES TO DEFINE THE ACCESS OF USERS GOOGLE CALENDAR ---END---
 
 
@@ -179,7 +199,42 @@ async function sendAuthorizationEmail(calendarIds, authUrl) {
 // FUNCTION TO SEND AUTH EMAIL TO NEW USERS ---END---
 
 
-// FUNCTION TO AUTHORIZE USERS ---START---
+// // FUNCTION TO AUTHORIZE USERS ---START---
+// async function authorize(calendarIds) {
+//   let client = await loadSavedCredentialsIfExist(calendarIds);
+//   if (client) {
+//     console.log("User Already Authorized");
+//     return client;
+//   }
+
+//   const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH));
+
+//   const { client_secret, client_id, redirect_uris } = credentials.web;
+//   const oAuth2Client = new google.auth.OAuth2(
+//     client_id,
+//     client_secret,
+//     redirect_uris
+//   );
+
+//   // Generate an authentication URL
+//   const authUrl = oAuth2Client.generateAuthUrl({
+//     access_type: "offline",
+//     scope: SCOPES,
+//     state: calendarIds, // Pass calendarIds as state
+//   });
+
+//   // Send the authorization URL to the user via email
+//   await sendAuthorizationEmail(calendarIds, authUrl);
+
+//   // Perform any other actions as needed
+//   // (e.g., wait for user interaction, provide instructions)
+
+//   return null; // Indicate that authorization is pending
+// }
+
+
+
+
 async function authorize(calendarIds) {
   let client = await loadSavedCredentialsIfExist(calendarIds);
   if (client) {
@@ -190,213 +245,238 @@ async function authorize(calendarIds) {
   const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH));
 
   const { client_secret, client_id, redirect_uris } = credentials.web;
-  const oAuth2Client = new google.auth.OAuth2(
-    client_id,
-    client_secret,
-    redirect_uris
-  );
+  const config = {
+  auth: {
+    clientId: client_id,
+    // authority: 'https://login.microsoftonline.com/' + tenant_id,
+    authority: 'https://login.microsoftonline.com/common',
+    clientSecret: client_secret
+  }
+};
 
-  // Generate an authentication URL
-  const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: "offline",
-    scope: SCOPES,
-    state: calendarIds, // Pass calendarIds as state
-  });
+const cca = new msal.ConfidentialClientApplication(config);
+
+const authCodeUrlParameters = {
+  scopes: SCOPES,
+  redirectUri: redirect_uris[0],
+  state: calendarIds
+};
+
+
+const authUrl = await cca.getAuthCodeUrl(authCodeUrlParameters);
+console.log("uthUrl:----------")
+console.log(authUrl)
+await sendAuthorizationEmail(calendarIds, authUrl);
+
+
+// cca.getAuthCodeUrl(authCodeUrlParameters).then((authUrl) => {
+//   // console.log("Navigate to this URL to sign in:", response);
+//   sendAuthorizationEmail(calendarIds, authUrl);
+// }).catch((error) => console.log(JSON.stringify(error)));
+
+
 
   // Send the authorization URL to the user via email
-  await sendAuthorizationEmail(calendarIds, authUrl);
+  // await sendAuthorizationEmail(calendarIds, authUrl);
 
   // Perform any other actions as needed
   // (e.g., wait for user interaction, provide instructions)
 
   return null; // Indicate that authorization is pending
 }
+
+
+
+
+
+
+
 // FUNCTION TO AUTHORIZE USERS ---END---
 
 
-// FUNCTION TO SCHEDULE MEETING BETWEEN AUTH USERS ---START---
-async function scheduleMeeting(
-  authArray,
-  calendarIds,
-  summary,
-  description,
-  startTime,
-  endTime
-) {
-  // Check if the selected day is between Monday to Friday
-  const startDay = startTime.getDay();
-  const endDay = endTime.getDay();
-  const isWeekday =
-    startDay >= 1 && startDay <= 5 && endDay >= 1 && endDay <= 5;
+// // FUNCTION TO SCHEDULE MEETING BETWEEN AUTH USERS ---START---
+// async function scheduleMeeting(
+//   authArray,
+//   calendarIds,
+//   summary,
+//   description,
+//   startTime,
+//   endTime
+// ) {
+//   // Check if the selected day is between Monday to Friday
+//   const startDay = startTime.getDay();
+//   const endDay = endTime.getDay();
+//   const isWeekday =
+//     startDay >= 1 && startDay <= 5 && endDay >= 1 && endDay <= 5;
 
-  if (!isWeekday) {
-    console.log("Meeting can only be scheduled from Monday to Friday.");
-    return false; // Indicate failure
-  }
+//   if (!isWeekday) {
+//     console.log("Meeting can only be scheduled from Monday to Friday.");
+//     return false; // Indicate failure
+//   }
 
-  // Check if the selected time is between 9:30 am to 6:30 pm
-  const startHour = startTime.getHours();
-  const endHour = endTime.getHours();
-  const startMinutes = startTime.getMinutes();
-  const endMinutes = endTime.getMinutes();
+//   // Check if the selected time is between 9:30 am to 6:30 pm
+//   const startHour = startTime.getHours();
+//   const endHour = endTime.getHours();
+//   const startMinutes = startTime.getMinutes();
+//   const endMinutes = endTime.getMinutes();
 
-  if (
-    startHour < 9 ||
-    (startHour === 9 && startMinutes < 30) ||
-    endHour > 18 ||
-    (endHour === 18 && endMinutes > 30)
-  ) {
-    console.log("Meeting can only be scheduled between 9:30 am to 6:30 pm.");
-    return false; // Indicate failure
-  }
+//   if (
+//     startHour < 9 ||
+//     (startHour === 9 && startMinutes < 30) ||
+//     endHour > 18 ||
+//     (endHour === 18 && endMinutes > 30)
+//   ) {
+//     console.log("Meeting can only be scheduled between 9:30 am to 6:30 pm.");
+//     return false; // Indicate failure
+//   }
 
-  const calendars = authArray.map((auth, index) => {
-    return google.calendar({ version: "v3", auth });
-  });
+//   const calendars = authArray.map((auth, index) => {
+//     return google.calendar({ version: "v3", auth });
+//   });
 
-  const freeBusyResponses = await Promise.all(
-    calendars.map((calendar, index) => {
-      return calendar.freebusy.query({
-        auth: authArray[index],
-        requestBody: {
-          timeMin: startTime.toISOString(),
-          timeMax: endTime.toISOString(),
-          items: [{ id: calendarIds[index] }],
-        },
-      });
-    })
-  );
+//   const freeBusyResponses = await Promise.all(
+//     calendars.map((calendar, index) => {
+//       return calendar.freebusy.query({
+//         auth: authArray[index],
+//         requestBody: {
+//           timeMin: startTime.toISOString(),
+//           timeMax: endTime.toISOString(),
+//           items: [{ id: calendarIds[index] }],
+//         },
+//       });
+//     })
+//   );
 
-  const busySlotsArray = freeBusyResponses.map((response) => {
-    if (response && response.data && response.data.calendars) {
-      return response.data.calendars;
-    } else {
-      console.log("Error processing freeBusy response:", response);
-      return null;
-    }
-  });
+//   const busySlotsArray = freeBusyResponses.map((response) => {
+//     if (response && response.data && response.data.calendars) {
+//       return response.data.calendars;
+//     } else {
+//       console.log("Error processing freeBusy response:", response);
+//       return null;
+//     }
+//   });
 
-  let commonFreeSlots;
+//   let commonFreeSlots;
 
-  // Ensure that all responses were valid
-  if (busySlotsArray.every((slots) => slots !== null)) {
-    // Calculate common free slots
-    commonFreeSlots = calculateCommonFreeSlots(
-      startTime,
-      endTime,
-      busySlotsArray
-    );
+//   // Ensure that all responses were valid
+//   if (busySlotsArray.every((slots) => slots !== null)) {
+//     // Calculate common free slots
+//     commonFreeSlots = calculateCommonFreeSlots(
+//       startTime,
+//       endTime,
+//       busySlotsArray
+//     );
 
-    // Continue with the rest of your code...
-  } else {
-    console.log("Error processing freeBusy responses. Aborting scheduling.");
-    return false;
-  }
-  console.log("commonFreeSlots:-----");
-  console.log(commonFreeSlots);
+//     // Continue with the rest of your code...
+//   } else {
+//     console.log("Error processing freeBusy responses. Aborting scheduling.");
+//     return false;
+//   }
+//   console.log("commonFreeSlots:-----");
+//   console.log(commonFreeSlots);
 
-  // Minimum duration required for the meeting
-  const minimumMeetingDuration = 60 * 60 * 1000; // 1 hour in milliseconds
+//   // Minimum duration required for the meeting
+//   const minimumMeetingDuration = 60 * 60 * 1000; // 1 hour in milliseconds
 
-  // Filter common free slots that are long enough for the meeting
-  const suitableSlots = commonFreeSlots.filter((slot) => {
-    const slotDuration =
-      new Date(slot.end).getTime() - new Date(slot.start).getTime();
-    return slotDuration >= minimumMeetingDuration;
-  });
+//   // Filter common free slots that are long enough for the meeting
+//   const suitableSlots = commonFreeSlots.filter((slot) => {
+//     const slotDuration =
+//       new Date(slot.end).getTime() - new Date(slot.start).getTime();
+//     return slotDuration >= minimumMeetingDuration;
+//   });
 
-  if (suitableSlots.length > 0) {
-    const firstSlot = suitableSlots[0];
-    const meetingEndTime = new Date(
-      new Date(firstSlot.start).getTime() + minimumMeetingDuration
-    );
-    const event = {
-      summary,
-      description,
-      start: {
-        dateTime: firstSlot.start,
-        timeZone: "Asia/Kolkata",
-      },
-      end: {
-        dateTime: meetingEndTime.toISOString(),
-        timeZone: "Asia/Kolkata",
-      },
-    };
+//   if (suitableSlots.length > 0) {
+//     const firstSlot = suitableSlots[0];
+//     const meetingEndTime = new Date(
+//       new Date(firstSlot.start).getTime() + minimumMeetingDuration
+//     );
+//     const event = {
+//       summary,
+//       description,
+//       start: {
+//         dateTime: firstSlot.start,
+//         timeZone: "Asia/Kolkata",
+//       },
+//       end: {
+//         dateTime: meetingEndTime.toISOString(),
+//         timeZone: "Asia/Kolkata",
+//       },
+//     };
 
-    for (const calendarId of calendarIds) {
-      const calendarIndex = calendarIds.indexOf(calendarId);
-      await calendars[calendarIndex].events.insert({
-        auth: authArray[calendarIndex],
-        calendarId: calendarId,
-        resource: event,
-      });
-    }
+//     for (const calendarId of calendarIds) {
+//       const calendarIndex = calendarIds.indexOf(calendarId);
+//       await calendars[calendarIndex].events.insert({
+//         auth: authArray[calendarIndex],
+//         calendarId: calendarId,
+//         resource: event,
+//       });
+//     }
 
-    console.log(
-      `Meeting scheduled for ${
-        firstSlot.start
-      } to ${meetingEndTime.toISOString()}`
-    );
-    return true; // Indicate success
-  } else {
-    console.log("No suitable free slots found for the meeting.");
-    return false; // Indicate failure
-  }
-}
-// FUNCTION TO SCHEDULE MEETING BETWEEN AUTH USERS ---END---
-
-
-// FUNCTION TO CALCULATE COMMON FREE SLOTS BETWEEN AUTH USERS ---START---
-function calculateCommonFreeSlots(startTime, endTime, busySlots) {
-  const busyPeriods = busySlots.map((obj) => {
-    const { busy } = Object.values(obj)[0];
-    return busy;
-  });
-  console.log("busyPeriods:-----");
-  console.log(busyPeriods);
-
-  const commonFreeSlots = findCommonFreeSlots(startTime, endTime, busyPeriods);
-
-  return commonFreeSlots;
-}
-// FUNCTION TO CALCULATE COMMON FREE SLOTS BETWEEN AUTH USERS ---END---
+//     console.log(
+//       `Meeting scheduled for ${
+//         firstSlot.start
+//       } to ${meetingEndTime.toISOString()}`
+//     );
+//     return true; // Indicate success
+//   } else {
+//     console.log("No suitable free slots found for the meeting.");
+//     return false; // Indicate failure
+//   }
+// }
+// // FUNCTION TO SCHEDULE MEETING BETWEEN AUTH USERS ---END---
 
 
-// FUNCTION TO FIND COMMON FREE SLOTS BETWEEN AUTH USERS ---START---
-function findCommonFreeSlots(startTime, endTime, busyPeriods) {
-  const mergedBusyPeriods = [].concat(...busyPeriods);
-  mergedBusyPeriods.sort((a, b) => new Date(a.start) - new Date(b.start));
+// // FUNCTION TO CALCULATE COMMON FREE SLOTS BETWEEN AUTH USERS ---START---
+// function calculateCommonFreeSlots(startTime, endTime, busySlots) {
+//   const busyPeriods = busySlots.map((obj) => {
+//     const { busy } = Object.values(obj)[0];
+//     return busy;
+//   });
+//   console.log("busyPeriods:-----");
+//   console.log(busyPeriods);
 
-  const commonFreeSlots = [];
-  let currentStartTime = new Date(startTime);
+//   const commonFreeSlots = findCommonFreeSlots(startTime, endTime, busyPeriods);
 
-  for (const busyPeriod of mergedBusyPeriods) {
-    const busyStartTime = new Date(busyPeriod.start);
-    const busyEndTime = new Date(busyPeriod.end);
+//   return commonFreeSlots;
+// }
+// // FUNCTION TO CALCULATE COMMON FREE SLOTS BETWEEN AUTH USERS ---END---
 
-    if (currentStartTime < busyStartTime) {
-      if (busyStartTime <= endTime) {
-        commonFreeSlots.push({
-          start: currentStartTime.toISOString(),
-          end: busyStartTime.toISOString(),
-        });
-        currentStartTime = new Date(busyEndTime);
-      }
-    } else {
-      currentStartTime = new Date(Math.max(currentStartTime, busyEndTime));
-    }
-  }
 
-  if (currentStartTime < endTime) {
-    commonFreeSlots.push({
-      start: currentStartTime.toISOString(),
-      end: endTime.toISOString(),
-    });
-  }
+// // FUNCTION TO FIND COMMON FREE SLOTS BETWEEN AUTH USERS ---START---
+// function findCommonFreeSlots(startTime, endTime, busyPeriods) {
+//   const mergedBusyPeriods = [].concat(...busyPeriods);
+//   mergedBusyPeriods.sort((a, b) => new Date(a.start) - new Date(b.start));
 
-  return commonFreeSlots;
-}
-// FUNCTION TO FIND COMMON FREE SLOTS BETWEEN AUTH USERS ---END---
+//   const commonFreeSlots = [];
+//   let currentStartTime = new Date(startTime);
+
+//   for (const busyPeriod of mergedBusyPeriods) {
+//     const busyStartTime = new Date(busyPeriod.start);
+//     const busyEndTime = new Date(busyPeriod.end);
+
+//     if (currentStartTime < busyStartTime) {
+//       if (busyStartTime <= endTime) {
+//         commonFreeSlots.push({
+//           start: currentStartTime.toISOString(),
+//           end: busyStartTime.toISOString(),
+//         });
+//         currentStartTime = new Date(busyEndTime);
+//       }
+//     } else {
+//       currentStartTime = new Date(Math.max(currentStartTime, busyEndTime));
+//     }
+//   }
+
+//   if (currentStartTime < endTime) {
+//     commonFreeSlots.push({
+//       start: currentStartTime.toISOString(),
+//       end: endTime.toISOString(),
+//     });
+//   }
+
+//   return commonFreeSlots;
+// }
+// // FUNCTION TO FIND COMMON FREE SLOTS BETWEEN AUTH USERS ---END---
 
 
 // // ROOT ROUTE ---START---
@@ -418,6 +498,62 @@ app.get("/error", (req, res) => {
 
 
 // POST ROUTE TO SEND AUTH EMAIL TO NEW USERS ---START---
+// app.post("/send-auth-email", async (req, res) => {
+//   try {
+//     const { calendarIds } = req.body;
+
+//     if (!calendarIds) {
+//       return res.status(400).json({ error: "Missing required parameters" });
+//     }
+
+//     // Call the authorize function to send the authentication email
+//     await authorize(calendarIds);
+
+//     return res.json({
+//       message: "Authorization email sent. Please check your email.",
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+// // POST ROUTE TO SEND AUTH EMAIL TO NEW USERS ---END---
+
+
+// // GET ROUTE TO CALL WHEN NEW USER SUCCESSFULLY AUTHENTICATES THEIR ACCOUNT ---START---
+// app.get("/oauth2callback", async (req, res) => {
+//   const { code, state } = req.query;
+
+//   const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH));
+//   const a = JSON.stringify(credentials);
+//   const { client_secret, client_id, redirect_uris } = credentials.web; 
+//   const oAuth2Client = new google.auth.OAuth2(
+//     client_id,
+//     client_secret,
+//     redirect_uris[0]
+//   );
+//   // console.log("oAuth2Client: " + oAuth2Client)
+
+//   try {
+//     const tokens = await oAuth2Client.getToken(code);
+//     oAuth2Client.setCredentials(tokens);
+
+//     await saveCredentials(tokens, state);
+//     // await saveCredentials(tokens);
+
+//     // Redirect or respond with a success message
+//     res.redirect("/"); // Redirect to your HTML page
+//     console.log("authentication successful");
+//   } catch (error) {
+//     console.error("Error retrieving access token", error);
+//     // Redirect or respond with an error message
+//     res.redirect("/error");
+//   }
+// });
+
+
+
+
 app.post("/send-auth-email", async (req, res) => {
   try {
     const { calendarIds } = req.body;
@@ -441,21 +577,95 @@ app.post("/send-auth-email", async (req, res) => {
 
 
 // GET ROUTE TO CALL WHEN NEW USER SUCCESSFULLY AUTHENTICATES THEIR ACCOUNT ---START---
-app.get("/oauth2callback", async (req, res) => {
+app.get("/auth/redirect", async (req, res) => {
   const { code, state } = req.query;
+  // console.log("request:-----------")
+  // console.log(req)
+  // console.log("response:--------")
+  // console.log(res)
+  console.log("code:-------")
+  console.log(code)
 
   const credentials = JSON.parse(await fs.readFile(CREDENTIALS_PATH));
   const a = JSON.stringify(credentials);
-  const { client_secret, client_id, redirect_uris } = credentials.web; 
-  const oAuth2Client = new google.auth.OAuth2(
-    client_id,
-    client_secret,
-    redirect_uris[0]
-  );
+  const { client_secret, client_id, redirect_uris, tenant_id } = credentials.web; 
+  // const oAuth2Client = new google.auth.OAuth2(
+  //   client_id,
+  //   client_secret,
+  //   redirect_uris[0]
+  // );
+
+
+
+  // const configGet = {
+  //   auth: {
+  //     clientId: client_id,
+  //     authority: 'https://login.microsoftonline.com/' + tenant_id,
+  //     // authority: 'https://login.microsoftonline.com/common',
+  //     clientSecret: client_secret
+  //     // code: code
+  //   }
+  // };
+  
+  // const cca = new msal.ConfidentialClientApplication(configGet);
+
+
+  const authProvider = new msal.ConfidentialClientApplication({
+    auth: {
+      clientId: client_id,
+      // authority: 'https://login.microsoftonline.com/' + tenant_id,
+      authority: 'https://login.microsoftonline.com/common',
+      clientSecret: client_secret,
+      // redirectUri: redirect_uris[0]
+    }
+  });
+
+  // const tokenRequest = {
+  //   // scopes: ["User.Read", "Calendars.ReadWrite"]
+  //   // scopes: SCOPES
+  //   redirectUri: redirect_uris[0],
+  //   scopes: ["offline_access", "https://graph.microsoft.com/.default"],
+  //   code: code
+  // };
+
+
+  const tokenRequest = {
+    code: code,
+    redirectUri: redirect_uris[0],
+    scopes: ["offline_access", "https://graph.microsoft.com/.default"]
+  };
+
+    // const tokenRequest = {
+    //   // code: code,
+    //   redirectUri: redirect_uris[0],
+    //   scopes: ["User.Read", "Calendars.ReadWrite"] // Adjust scopes as per your requirement
+    // };
+
+    // const tokenResponse = await authProvider.getToken(tokenRequest);
+    //     console.log("tokenResponse:-------")
+    //     console.log(tokenResponse)
+
+
+    const response = await authProvider.acquireTokenByCode(tokenRequest);
+    console.log("response:-------")
+    console.log(response)
+
+  // const response = await cca.acquireTokenByCode(tokenRequest);
+  // console.log("response:-----------")
+  // console.log(response)
+  // const accessToken = response.accessToken;
+  // console.log("Access Token:", accessToken);
+  // const oAuth2Client = new msal.ConfidentialClientApplication(client_id, client_secret, redirect_uris[0]);
+
+
   // console.log("oAuth2Client: " + oAuth2Client)
 
   try {
-    const tokens = await oAuth2Client.getToken(code);
+    // const tokens = await oAuth2Client.getToken(code);
+
+    const tokens = await oAuth2Client.acquireTokenSilent(code);
+    console.log("tokens:-------")
+    console.log(tokens)
     oAuth2Client.setCredentials(tokens);
 
     await saveCredentials(tokens, state);
@@ -470,60 +680,63 @@ app.get("/oauth2callback", async (req, res) => {
     res.redirect("/error");
   }
 });
+
+
+
 // GET ROUTE TO CALL WHEN NEW USER SUCCESSFULLY AUTHENTICATES THEIR ACCOUNT ---END---
 
 
-// POST ROUTE TO SCHEDULE MEETING BETWEEN AUTH USERS ---START---
-app.post("/schedule-meeting", async (req, res) => {
-  try {
-    const { calendarIds, summary, description, startTime, endTime } = req.body;
+// // POST ROUTE TO SCHEDULE MEETING BETWEEN AUTH USERS ---START---
+// app.post("/schedule-meeting", async (req, res) => {
+//   try {
+//     const { calendarIds, summary, description, startTime, endTime } = req.body;
 
-    if (!calendarIds || !summary || !description || !startTime || !endTime) {
-      return res.status(400).json({ error: "Missing required parameters" });
-    }
+//     if (!calendarIds || !summary || !description || !startTime || !endTime) {
+//       return res.status(400).json({ error: "Missing required parameters" });
+//     }
 
-    // Load saved credentials for provided calendarIds
-    const authClients = await loadSavedCredentialsIfExist(calendarIds);
+//     // Load saved credentials for provided calendarIds
+//     const authClients = await loadSavedCredentialsIfExist(calendarIds);
 
-    if (!authClients || authClients.length !== calendarIds.length) {
-      return res
-        .status(400)
-        .json({ error: "Credentials not found for all provided calendarIds" });
-    }
+//     if (!authClients || authClients.length !== calendarIds.length) {
+//       return res
+//         .status(400)
+//         .json({ error: "Credentials not found for all provided calendarIds" });
+//     }
 
-    // Collect auth and userEmail values in arrays
-    const authArray = [];
-    const userEmailArray = [];
+//     // Collect auth and userEmail values in arrays
+//     const authArray = [];
+//     const userEmailArray = [];
 
-    for (let i = 0; i < authClients.length; i++) {
-      const auth = authClients[i];
-      const userEmail = calendarIds[i];
+//     for (let i = 0; i < authClients.length; i++) {
+//       const auth = authClients[i];
+//       const userEmail = calendarIds[i];
 
-      authArray.push(auth);
-      userEmailArray.push(userEmail);
-    }
+//       authArray.push(auth);
+//       userEmailArray.push(userEmail);
+//     }
 
-    // Schedule meetings for all users
-    const success = await scheduleMeeting(
-      authArray,
-      userEmailArray,
-      summary,
-      description,
-      new Date(startTime),
-      new Date(endTime)
-    );
+//     // Schedule meetings for all users
+//     const success = await scheduleMeeting(
+//       authArray,
+//       userEmailArray,
+//       summary,
+//       description,
+//       new Date(startTime),
+//       new Date(endTime)
+//     );
 
-    if (!success) {
-      return res.status(400).json({ error: "Failed to schedule meetings" });
-    }
+//     if (!success) {
+//       return res.status(400).json({ error: "Failed to schedule meetings" });
+//     }
 
-    return res.json({ message: "Meetings scheduled successfully" });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-// POST ROUTE TO SCHEDULE MEETING BETWEEN AUTH USERS ---END---
+//     return res.json({ message: "Meetings scheduled successfully" });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+// // POST ROUTE TO SCHEDULE MEETING BETWEEN AUTH USERS ---END---
 
 
 // POST ON WHICH EXPRESS APPLICATION RUNS ---START---
