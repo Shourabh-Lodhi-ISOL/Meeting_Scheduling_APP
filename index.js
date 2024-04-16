@@ -52,10 +52,10 @@ passport.deserializeUser((obj, done) => {
 
 
 
-const clientID = "608c798e-cba6-4fd5-be11-4faf246e98fa"
-const clientSecret = "6Nn8Q~3wNvQ30lxPa5XcAcUUyFZa2yFToNsF.ag."
-const tenantID = "f8cdef31-a31e-4b4a-93e4-5f571e91255a"
 
+const clientID = CLIENTID
+const clientSecret = CLIENTSECRET
+const tenantID = TENENTID
 
 passport.use(new MicrosoftStrategy({
   clientID: clientID,
