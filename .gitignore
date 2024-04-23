@@ -3,6 +3,8 @@ credentials.json
 credentials2.json
 /node_modules
 token.json
+index1.js
+index2.js
 .DS_Store
 
 
