@@ -35,14 +35,8 @@ passport.deserializeUser((obj, done) => {
 // PASSPORT SETUP ---END---
 
 // OUTLOOK CREDENTIALS ---START---
-const clientID = "608c798e-cba6-4fd5-be11-4faf246e98fa";
-// const clientSecret = "6Nn8Q~3wNvQ30lxPa5XcAcUUyFZa2yFToNsF.ag.";
-const clientSecret = "rQD8Q~TMUlHSq1DMj1PlTZvEd2y5v~QhyaHvpdeH";
-
-// // CLient ID and secret for verified app
-// const clientID = "3ec6c363-e8f7-4460-bc3d-5bb3bc3629ac";
-// const clientSecret = "O2z8Q~AMO7ek8zQTlz-golvNn~NksdhujeW4Yajm";
-// const tenantID = "";
+const clientID = process.env.CLIENTID;
+const clientSecret = process.env.CLIENTSECRET;
 // OUTLOOK CREDENTIALS ---END---
 
 
@@ -279,8 +273,11 @@ async function refreshTokenIfNeeded(userEmail) {
 
 
 // EMAIL AND APP PASSWORD FOR THE ACCOUNT WHICH SEND AUTH EMAILS TO THE USERS ---START---
-const user_name = "ethanwick7336@gmail.com";
-const app_pass = "mvaw dnpz tlbf xvqq";
+// const user_name = "ethanwick7336@gmail.com";
+// const app_pass = "mvaw dnpz tlbf xvqq";
+
+const user_name = process.env.USERNAME;
+const app_pass = process.env.APPPASS;
 // EMAIL AND APP PASSWORD FOR THE ACCOUNT WHICH SEND AUTH EMAILS TO THE USERS ---END---
 
 
