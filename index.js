@@ -2131,6 +2131,11 @@ async function getTimeSlots(meetingData){
       let office_Start=moment.tz('2024-03-27T08:30:00', meetingTimezone)
       let office_End=moment.tz('2024-03-27T17:00:00', meetingTimezone)
 
+
+      // let office_Start=moment.tz('2024-03-27T08:00:00', meetingTimezone)
+      // let office_End=moment.tz('2024-03-27T18:30:00', meetingTimezone)
+
+
       let start_Date_time_zone = office_Start.clone().set({
         year: moment(start_date).year(),
         month: moment(start_date).month(),
@@ -2155,6 +2160,9 @@ async function getTimeSlots(meetingData){
       // var end_Date_time = moment.utc(end_Date_time_zone);
       var end_Date_time = moment(end_Date_time_zone);
       // var end_Date_time = moment.tz(end_Date_time_zone,"Europe/Amsterdam");
+
+      console.log("end_Date_time")
+      console.log(end_Date_time)
 
      
 
@@ -2261,6 +2269,9 @@ async function loadSavedCredentialsIfExist(calendarIds) {
           // Log the retrieved credentials for debugging
           console.log(`Credentials found for calendar ID ${calendarId}:`);
 
+          console.log("credentials:------------")
+          // console.log(credentials)
+
           // const accessToken = credentials.access_token;
           const refreshToken = credentials.refresh_token;
           const accessTokenExisting = credentials.access_token;
@@ -2297,7 +2308,7 @@ async function loadSavedCredentialsIfExist(calendarIds) {
           client.calendarId = calendarId;
           
           console.log("client:----------");
-          console.log(client);
+          // console.log(client);
 
           clients.push(client);
 
@@ -2431,6 +2442,72 @@ async function refreshTokenIfNeeded(userEmail,refreshToken,accessToken,expiresIn
   }
 
 }
+
+
+
+
+
+
+// async function refreshTokenIfNeeded(userEmail) {
+//   console.log("refreshTokenIfNeededHIT:--------------");
+
+//   const savedUsersCredentials = JSON.parse(await fs.readFile(TOKEN_PATH));
+
+//   const userCredentials = savedUsersCredentials.find(
+//     (cred) => cred.user_email === userEmail
+//   );
+
+//   const currentTimestamp = Math.floor(Date.now() / 1000); // Current time in seconds
+
+//   const expireTimestamp = Math.floor(
+//     new Date(userCredentials.expire_date).getTime() / 1000
+//   );
+
+//   // Check if the access token is expired
+//   if (expireTimestamp < currentTimestamp) {
+//     console.log(
+//       `Access Token Expired for ${userCredentials.user_email}, Refreshing the Access Token:------------`
+//     );
+
+//     const refreshResponse = await axios.post(
+//       "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+//       new URLSearchParams({
+//         client_id: clientID,
+//         client_secret: clientSecret,
+//         refresh_token: userCredentials.refresh_token,
+//         grant_type: "refresh_token",
+//         redirect_uri: "http://localhost:3000/auth/microsoft",
+//       }).toString(),
+//       {
+//         headers: {
+//           "Content-Type": "application/x-www-form-urlencoded",
+//         },
+//       }
+//     );
+
+//     const { access_token, refresh_token, expires_in } = refreshResponse.data;
+//     // Save the new credentials
+//     await saveCredentials(access_token, refresh_token, userEmail, expires_in);
+
+//     return access_token;
+//   } else {
+//     // If the access token is not expired, return the existing one
+//     console.log(
+//       `Access Token is not Expired for ${userCredentials.user_email}, using the existing one:------------`
+//     );
+
+//     // console.log("existing access token:---------")
+//     // console.log(userCredentials.access_token)
+//     return userCredentials.access_token;
+//   }
+//   // return (access_token, userEmail);
+// }
+
+
+
+
+
+
 // FUNCTION TO REFRESH THE ACCESS TOKEN ---END---
 
 
@@ -2449,6 +2526,8 @@ async function scheduleMeeting(
   meeting_min,
   iteration
 ) {
+
+  try {
   // Check if the selected day is between Monday to Friday
   const startDay = startTime.getDay();
   const endDay = endTime.getDay();
@@ -2472,7 +2551,7 @@ async function scheduleMeeting(
 
 
   const scheduleJsonData = jsonData
-  let oofResult = null
+  let oofResult = []
 
 
 
@@ -2544,10 +2623,14 @@ async function scheduleMeeting(
   });
 
 
-  // console.log("freeBusyResults:------------");
-  // console.log(freeBusyResults);
-  // console.log("busySlotsArray:-----------");
-  // console.log(busySlotsArray);
+  console.log("freeBusyResults:------------");
+  console.log(freeBusyResults);
+
+
+  console.log("busySlotsArray:-----------");
+  console.log(busySlotsArray);
+  const BSA = JSON.stringify(busySlotsArray)
+  console.log(BSA)
 
 
   let commonFreeSlots;
@@ -2567,11 +2650,193 @@ async function scheduleMeeting(
   console.log(optionalUsersEmails);
 
 
-async function getCommonFreeSlots(startTime, endTime, busySlotsArray, scheduleJsonData, calendarIds, optionalUsersEmails, meeting_timeZone, outOfOfficeEvents, oofResult) {
-  // Ensure that all responses were valid
-  if (busySlotsArray.every((slots) => slots !== null)) {
-    // Calculate common free slots
-    const commonFreeSlots = await calculateCommonFreeSlots(
+  async function getCommonFreeSlots(startTime, endTime, busySlotsArray, scheduleJsonData, calendarIds, optionalUsersEmails, meeting_timeZone, outOfOfficeEvents, oofResult) {
+    // Ensure that all responses were valid
+    if (busySlotsArray.every((slots) => slots !== null)) {
+      // Calculate common free slots
+      const commonFreeSlots = await calculateCommonFreeSlots(
+        startTime,
+        endTime,
+        busySlotsArray,
+        scheduleJsonData,
+        calendarIds,
+        optionalUsersEmails,
+        meeting_timeZone,
+        outOfOfficeEvents,
+        oofResult
+      );
+      return commonFreeSlots;
+    } else {
+      console.log("Error processing freeBusy responses. Aborting scheduling.");
+      return false;
+    }
+  }
+
+
+
+//   async function findSuitableSlot(startTime, endTime, busySlotsArray, scheduleJsonData, calendarIds, optionalUsersEmails, meeting_timeZone, outOfOfficeEvents, meetingDuration, meeting_min) {
+    
+//     console.log("findSuitableSlot function HIT:-----------")
+
+//     console.log("outOfOfficeEvents:-----------")
+//     console.log(outOfOfficeEvents)
+    
+//     oofResult = []; // Initialize oofResult as an empty array to store all discarded times
+ 
+//    let commonFreeSlots = await getCommonFreeSlots(
+//        startTime,
+//        endTime,
+//        busySlotsArray,
+//        scheduleJsonData,
+//        calendarIds,
+//        optionalUsersEmails,
+//        meeting_timeZone,
+//        outOfOfficeEvents,
+//        oofResult // Pass oofResult initially
+//    );
+
+
+//    console.log("commonFreeSlots in findSuitableSLot function FIRST:------------");
+//    console.log(commonFreeSlots);
+
+ 
+//    let iterationCount = 0;
+//    const maxIterations = 10; // Limit to avoid infinite loop
+ 
+//    while (commonFreeSlots !== null && iterationCount < maxIterations) {
+//        iterationCount++;
+
+//        console.log("iterationCount in findSuitableSlot function:---------")
+//        console.log(iterationCount)
+ 
+//        let minimumMeetingDuration = meetingDuration * 60 * 1000;
+//        let suitableFreeSlot = commonFreeSlots ? commonFreeSlots.map((element) => element.commonSlot) : null;
+ 
+//        if (
+//            meeting_min &&
+//            Array.isArray(suitableFreeSlot) &&
+//            suitableFreeSlot.length > 0 &&
+//            suitableFreeSlot[0]
+//        ) {
+//            if (
+//                moment
+//                    .duration(
+//                        moment(suitableFreeSlot[0].end).diff(suitableFreeSlot[0].start)
+//                    )
+//                    .asMilliseconds() <= minimumMeetingDuration
+//            ) {
+//                minimumMeetingDuration =
+//                    moment
+//                        .duration(
+//                            moment(suitableFreeSlot[0].end).diff(suitableFreeSlot[0].start)
+//                        )
+//                        .asMinutes() *
+//                    60 *
+//                    1000;
+//            }
+//        }
+ 
+//        let suitableSlots = suitableFreeSlot ? suitableFreeSlot.filter((slot) => {
+//            const slotDuration =
+//                new Date(slot.end).getTime() - new Date(slot.start).getTime();
+//            return slotDuration >= minimumMeetingDuration;
+//        }) : null;
+ 
+//        if (!suitableSlots || suitableSlots.length === 0) {
+//            console.log("No suitable free slots found for the meeting, Users full day busy.");
+//            return null;
+//        }
+ 
+//        let sendListArr = commonFreeSlots.map((element) => element.sendList);
+//        let sendListArray = sendListArr.flat();
+ 
+//        const firstSlot = suitableSlots[0];
+//        const meetingEndTime = new Date(new Date(firstSlot.start).getTime() + minimumMeetingDuration);
+//        const firstSlotStart = new Date(firstSlot.start);
+ 
+//        function convertToAmsterdamTime(utcTimeString) {
+//            return moment.utc(utcTimeString).tz(meeting_timeZone).format();
+//        }
+ 
+//        const suitableStartTime = convertToAmsterdamTime(firstSlotStart);
+//        const suitableEndTime = convertToAmsterdamTime(meetingEndTime);
+ 
+//        const meetingSuitableTime = {
+//            suitableStartTime: suitableStartTime,
+//            suitableEndTime: suitableEndTime,
+//            suitableSendListArray: sendListArray,
+//        };
+ 
+//        const { suitableSendListArray } = meetingSuitableTime;
+//        const suitableStart = new Date(suitableStartTime);
+//        const suitableEnd = new Date(suitableEndTime);
+ 
+//        // Check for OOF events for all users in suitableSendListArray
+//        let isOOF = false;
+//        for (const userToCheck of suitableSendListArray) {
+//            const userOOFEvent = outOfOfficeEvents.find(event => event.scheduleId === userToCheck && event.status === 'oof');
+//            if (userOOFEvent) {
+//                const oofStart = new Date(userOOFEvent.start);
+//                const oofEnd = new Date(userOOFEvent.end);
+//                if ((suitableStart >= oofStart && suitableStart < oofEnd) || (suitableEnd > oofStart && suitableEnd <= oofEnd)) {
+//                    console.log(`User ${userToCheck} is OOF, finding new slot.........`);
+//                    oofResult.push({ suitableStartTime, suitableEndTime }); // Add discarded time to oofResult
+//                    isOOF = true;
+//                    break; // No need to check further users if one is found OOF
+//                }
+//            }
+//        }
+ 
+//        if (isOOF) {
+//         console.log("isOOF condition HIT:---------")
+//            console.log("oofResult:------------");
+//            console.log(oofResult);
+ 
+//            commonFreeSlots = await getCommonFreeSlots(
+//                startTime,
+//                endTime,
+//                busySlotsArray,
+//                scheduleJsonData,
+//                calendarIds,
+//                optionalUsersEmails,
+//                meeting_timeZone,
+//                outOfOfficeEvents,
+//                oofResult // Pass updated oofResult to getCommonFreeSlots
+//            );
+//        } else {
+//            console.log("User(s) are available in findSuitableSlot function");
+ 
+//            commonFreeSlots[0].commonSlot.start = suitableStartTime;
+//            commonFreeSlots[0].commonSlot.end = suitableEndTime;
+ 
+//            console.log("commonFreeSlots in findSuitableSLot function before return:------------");
+//            console.log(commonFreeSlots);
+ 
+//            return commonFreeSlots;
+//        }
+//    }
+ 
+//    console.log("Failed to find a suitable meeting time after multiple attempts.");
+//    return null; // Return null if no suitable slots found after maxIterations
+//  }
+
+
+
+
+
+
+
+
+
+async function findSuitableSlot(startTime, endTime, busySlotsArray, scheduleJsonData, calendarIds, optionalUsersEmails, meeting_timeZone, outOfOfficeEvents, meetingDuration, meeting_min) {
+  oofResult = []; // Initialize oofResult as an empty array to store all discarded times
+
+
+    console.log("findSuitableSlot function HIT:-----------")
+    console.log("outOfOfficeEvents:-----------")
+    console.log(outOfOfficeEvents)
+
+  let commonFreeSlots = await getCommonFreeSlots(
       startTime,
       endTime,
       busySlotsArray,
@@ -2580,146 +2845,131 @@ async function getCommonFreeSlots(startTime, endTime, busySlotsArray, scheduleJs
       optionalUsersEmails,
       meeting_timeZone,
       outOfOfficeEvents,
-      oofResult
-    );
-    return commonFreeSlots;
-  } else {
-    console.log("Error processing freeBusy responses. Aborting scheduling.");
-    return false;
+      oofResult // Pass oofResult initially
+  );
+
+     console.log("commonFreeSlots in findSuitableSLot function FIRST:------------");
+     console.log(commonFreeSlots);
+
+
+  let iterationCount = 0;
+  const maxIterations = 20; // Limit to avoid infinite loop
+
+  while (commonFreeSlots !== null && iterationCount < maxIterations) {
+      iterationCount++;
+
+      let minimumMeetingDuration = meetingDuration * 60 * 1000;
+      let suitableFreeSlot = commonFreeSlots ? commonFreeSlots.map((element) => element.commonSlot) : null;
+
+      if (
+          meeting_min &&
+          Array.isArray(suitableFreeSlot) &&
+          suitableFreeSlot.length > 0 &&
+          suitableFreeSlot[0]
+      ) {
+          if (
+              moment
+                  .duration(
+                      moment(suitableFreeSlot[0].end).diff(suitableFreeSlot[0].start)
+                  )
+                  .asMilliseconds() <= minimumMeetingDuration
+          ) {
+              minimumMeetingDuration =
+                  moment
+                      .duration(
+                          moment(suitableFreeSlot[0].end).diff(suitableFreeSlot[0].start)
+                      )
+                      .asMinutes() *
+                  60 *
+                  1000;
+          }
+      }
+
+      let suitableSlots = suitableFreeSlot ? suitableFreeSlot.filter((slot) => {
+          const slotDuration =
+              new Date(slot.end).getTime() - new Date(slot.start).getTime();
+          return slotDuration >= minimumMeetingDuration;
+      }) : null;
+
+      if (!suitableSlots || suitableSlots.length === 0) {
+          console.log("No suitable free slots found for the meeting, Users full day busy.");
+          return false;
+      }
+
+      let sendListArr = commonFreeSlots.map((element) => element.sendList);
+      let sendListArray = sendListArr.flat();
+
+      const firstSlot = suitableSlots[0];
+      const meetingEndTime = new Date(new Date(firstSlot.start).getTime() + minimumMeetingDuration);
+      const firstSlotStart = new Date(firstSlot.start);
+
+      function convertToAmsterdamTime(utcTimeString) {
+          return moment.utc(utcTimeString).tz(meeting_timeZone).format();
+      }
+
+      const suitableStartTime = convertToAmsterdamTime(firstSlotStart);
+      const suitableEndTime = convertToAmsterdamTime(meetingEndTime);
+
+      const meetingSuitableTime = {
+          suitableStartTime: suitableStartTime,
+          suitableEndTime: suitableEndTime,
+          suitableSendListArray: sendListArray,
+      };
+
+      const suitableStart = new Date(suitableStartTime);
+      const suitableEnd = new Date(suitableEndTime);
+
+      // Check for OOF events for all users in suitableSendListArray
+      let isOOF = false;
+      for (const userToCheck of meetingSuitableTime.suitableSendListArray) {
+          const userOOFEvents = outOfOfficeEvents.filter(event => event.scheduleId === userToCheck && event.status === 'oof');
+          for (const userOOFEvent of userOOFEvents) {
+              const oofStart = new Date(userOOFEvent.start);
+              const oofEnd = new Date(userOOFEvent.end);
+              if ((suitableStart >= oofStart && suitableStart < oofEnd) || (suitableEnd > oofStart && suitableEnd <= oofEnd)) {
+                  console.log(`User ${userToCheck} is OOF, finding new slot...........`);
+                  oofResult.push({ suitableStartTime, suitableEndTime }); // Add discarded time to oofResult
+                  isOOF = true;
+                  break; // Break inner loop to check the next slot
+              }
+          }
+          if (isOOF) break; // Break outer loop if any user is OOF
+      }
+
+      if (isOOF) {
+          console.log("isOOF condition HIT:---------")
+          console.log("oofResult:------------");
+          console.log(oofResult);
+
+          commonFreeSlots = await getCommonFreeSlots(
+              startTime,
+              endTime,
+              busySlotsArray,
+              scheduleJsonData,
+              calendarIds,
+              optionalUsersEmails,
+              meeting_timeZone,
+              outOfOfficeEvents,
+              oofResult // Pass updated oofResult to getCommonFreeSlots
+          );
+      } else {
+          console.log("User(s) are available in findSuitableSlot function:----------");
+
+          commonFreeSlots[0].commonSlot.start = suitableStartTime;
+          commonFreeSlots[0].commonSlot.end = suitableEndTime;
+
+          console.log("commonFreeSlots in findSuitableSLot function before return:------------");
+          console.log(commonFreeSlots);
+
+          return commonFreeSlots;
+      }
   }
+
+  console.log("Failed to find a suitable meeting time after multiple attempts.");
+  return null; // Return null if no suitable slots found after maxIterations
 }
 
 
-async function findSuitableSlot(startTime, endTime, busySlotsArray, scheduleJsonData, calendarIds, optionalUsersEmails, meeting_timeZone, outOfOfficeEvents, meetingDuration, meeting_min) {
- oofResult = []; // Initialize oofResult as an empty array to store all discarded times
-
-let commonFreeSlots = await getCommonFreeSlots(
-    startTime,
-    endTime,
-    busySlotsArray,
-    scheduleJsonData,
-    calendarIds,
-    optionalUsersEmails,
-    meeting_timeZone,
-    outOfOfficeEvents,
-    oofResult // Pass oofResult initially
-);
-
-let iterationCount = 0;
-const maxIterations = 10; // Limit to avoid infinite loop
-
-while (commonFreeSlots !== null && iterationCount < maxIterations) {
-    iterationCount++;
-
-    let minimumMeetingDuration = meetingDuration * 60 * 1000;
-    let suitableFreeSlot = commonFreeSlots ? commonFreeSlots.map((element) => element.commonSlot) : null;
-
-    if (
-        meeting_min &&
-        Array.isArray(suitableFreeSlot) &&
-        suitableFreeSlot.length > 0 &&
-        suitableFreeSlot[0]
-    ) {
-        if (
-            moment
-                .duration(
-                    moment(suitableFreeSlot[0].end).diff(suitableFreeSlot[0].start)
-                )
-                .asMilliseconds() <= minimumMeetingDuration
-        ) {
-            minimumMeetingDuration =
-                moment
-                    .duration(
-                        moment(suitableFreeSlot[0].end).diff(suitableFreeSlot[0].start)
-                    )
-                    .asMinutes() *
-                60 *
-                1000;
-        }
-    }
-
-    let suitableSlots = suitableFreeSlot ? suitableFreeSlot.filter((slot) => {
-        const slotDuration =
-            new Date(slot.end).getTime() - new Date(slot.start).getTime();
-        return slotDuration >= minimumMeetingDuration;
-    }) : null;
-
-    if (!suitableSlots || suitableSlots.length === 0) {
-        console.log("No suitable free slots found for the meeting, Users full day busy.");
-        return false;
-    }
-
-    let sendListArr = commonFreeSlots.map((element) => element.sendList);
-    let sendListArray = sendListArr.flat();
-
-    const firstSlot = suitableSlots[0];
-    const meetingEndTime = new Date(new Date(firstSlot.start).getTime() + minimumMeetingDuration);
-    const firstSlotStart = new Date(firstSlot.start);
-
-    function convertToAmsterdamTime(utcTimeString) {
-        return moment.utc(utcTimeString).tz(meeting_timeZone).format();
-    }
-
-    const suitableStartTime = convertToAmsterdamTime(firstSlotStart);
-    const suitableEndTime = convertToAmsterdamTime(meetingEndTime);
-
-    const meetingSuitableTime = {
-        suitableStartTime: suitableStartTime,
-        suitableEndTime: suitableEndTime,
-        suitableSendListArray: sendListArray,
-    };
-
-    const { suitableSendListArray } = meetingSuitableTime;
-    const suitableStart = new Date(suitableStartTime);
-    const suitableEnd = new Date(suitableEndTime);
-
-    // Check for OOF events for all users in suitableSendListArray
-    let isOOF = false;
-    for (const userToCheck of suitableSendListArray) {
-        const userOOFEvent = outOfOfficeEvents.find(event => event.scheduleId === userToCheck && event.status === 'oof');
-        if (userOOFEvent) {
-            const oofStart = new Date(userOOFEvent.start);
-            const oofEnd = new Date(userOOFEvent.end);
-            if ((suitableStart >= oofStart && suitableStart < oofEnd) || (suitableEnd > oofStart && suitableEnd <= oofEnd)) {
-                console.log(`User ${userToCheck} is OOF, finding new slot.`);
-                oofResult.push({ suitableStartTime, suitableEndTime }); // Add discarded time to oofResult
-                isOOF = true;
-                break; // No need to check further users if one is found OOF
-            }
-        }
-    }
-
-    if (isOOF) {
-        console.log("oofResult:------------");
-        console.log(oofResult);
-
-        commonFreeSlots = await getCommonFreeSlots(
-            startTime,
-            endTime,
-            busySlotsArray,
-            scheduleJsonData,
-            calendarIds,
-            optionalUsersEmails,
-            meeting_timeZone,
-            outOfOfficeEvents,
-            oofResult // Pass updated oofResult to getCommonFreeSlots
-        );
-    } else {
-        console.log("User(s) are available");
-
-        commonFreeSlots[0].commonSlot.start = suitableStartTime;
-        commonFreeSlots[0].commonSlot.end = suitableEndTime;
-
-        console.log("commonFreeSlots:------------");
-        console.log(commonFreeSlots);
-
-        return commonFreeSlots;
-    }
-}
-
-console.log("Failed to find a suitable meeting time after multiple attempts.");
-return null; // Return null if no suitable slots found after maxIterations
-}
 
 
 
@@ -2745,8 +2995,8 @@ console.log(commonFreeSlots)
   // Minimum duration required for the meeting
   let minimumMeetingDuration = meetingDuration * 60 * 1000;
 
-  console.log("commonFreeSlot");
-  console.log(commonFreeSlots)
+  // console.log("commonFreeSlot");
+  // console.log(commonFreeSlots)
 
   let suitableSlots;
 
@@ -2792,7 +3042,7 @@ if(suitableFreeSlot){
       currentTime
     );
   } else {
-    console.log("Error processing freeBusy responses. Aborting scheduling.");
+    console.log("Error processing LOG DATA responses. Aborting scheduling.");
     return false;
   }
 
@@ -2858,33 +3108,6 @@ if(suitableFreeSlot){
   
       const firstSlotStart = new Date(firstSlot.start)
 
-      // const event = {
-      //   summary,
-      //   location: meetingLocation,
-      //   description,
-      //   start: {
-      //     // dateTime: firstSlot.start,
-      //     dateTime: firstSlotStart,
-      //     // timeZone: "Asia/Kolkata",
-      //     timeZone: timeZone,
-      //   },
-      //   end: {
-      //     // dateTime: meetingEndTime.toISOString(),
-      //     dateTime: meetingEndTime,
-      //     // timeZone: "Asia/Kolkata",
-      //     timeZone: timeZone,
-      //   },
-      // };
-  
-      // for (const calendarId of calendarIds) {
-      //   const calendarIndex = calendarIds.indexOf(calendarId);
-      //   await calendars[calendarIndex].events.insert({
-      //     auth: authArray[calendarIndex],
-      //     calendarId: 'primary',
-      //     resource: event,
-      //   });
-      // }
-      // await setMeeting(summary, meetingLocation, description, firstSlotStart, timeZone, meetingEndTime, calendarIds, calendars, authArray)
       let logData;
 
       if (busySlotsArray.every((slots) => slots !== null)) {
@@ -2901,7 +3124,7 @@ if(suitableFreeSlot){
         );
       } else {
         console.log(
-          "Error processing freeBusy responses. Aborting scheduling."
+          "Error processing LOG DATA responses. Aborting scheduling."
         );
         return false;
       }
@@ -2947,10 +3170,14 @@ if(suitableFreeSlot){
         commonTimeSlots:commonTimeSlots,
 
         status: '2'
-    };
+     };
 
-    console.log("meetingScheduled:----------")
-    console.log(meetingScheduled)
+      console.log("meetingScheduled:----------")
+      console.log(meetingScheduled)
+
+      const MS = JSON.stringify(meetingScheduled)
+      console.log(MS)
+
       return meetingScheduled; // return the meetingSchedule JSON
 
       return {status:200,message:`Meeting scheduled for ${firstSlot.start} to ${meetingEndTime.toISOString()}`};
@@ -2972,7 +3199,7 @@ if(suitableFreeSlot){
         );
       } else {
         console.log(
-          "Error processing freeBusy responses. Aborting scheduling."
+          "Error processing LOG DATA responses. Aborting scheduling."
         );
         return false;
       }
@@ -2994,7 +3221,7 @@ if(suitableFreeSlot){
         return {status:4, 
         logData:logData.enrichedSlotsByDateWithTime,
         commonTimeSlots:commonTimeSlots,
-    meetingId: meeting_id,message:`It seems there are no available time slot(s) for the meeting as the user's schedule is fully booked between the suggested time frame.`};
+      meetingId: meeting_id,message:`It seems there are no available time slot(s) for the meeting as the user's schedule is fully booked between the suggested time frame.`};
       console.log("No suitable free slots found for the meeting.");
       return false; // Indicate failure
     }
@@ -3124,7 +3351,7 @@ if(suitableFreeSlot){
             currentTime
           );
         } else {
-          console.log("Error processing freeBusy responses. Aborting scheduling.");
+          console.log("Error processing LOG DATA responses. Aborting scheduling.");
           return false;
         }
     
@@ -3158,14 +3385,19 @@ if(suitableFreeSlot){
       iteration:iteration,
       logData: logData.enrichedSlotsByDateWithTime,
       commonTimeSlots: commonTimeSlots,
-
     };
 
-    // console.log("extractedEmailSend:-------");
-    // console.log(extractedEmailSend);
+    console.log("extractedEmailSend:-------");
+    console.log(extractedEmailSend);
+    const EES = JSON.stringify(extractedEmailSend)
+    console.log(EES)
 
     return extractedEmailSend
+    
   }
+}catch(error){
+  console.log(`Error in scheduleMeeting function: ${error}`)
+}
 }
 // FUNCTION TO SCHEDULE MEETING BETWEEN AUTH USERS ---END---
 // async function setMeeting(summary, meetingLocation, description, firstSlotStart, timeZone, meetingEndTime, calendarIds, calendars, authArray,noTimezone=false){
@@ -3240,20 +3472,20 @@ console.log(hostParticipant);
       emailAddress: { address: email },
       type: "required",
     })),
-    responseRequested: false,
+    // responseRequested: false,
   };
 
   let organizer = [];
   organizer.push(host);
-console.log("auth Array");
-console.log(authArray)
+console.log("auth Array:---------");
+// console.log(authArray)
   // Find the client object with matching calendarId
   const organizerEmail = organizer[0]; // Assuming only one organizer email
   const clientObject = authArray.find(
     (client) => client.calendarId === organizerEmail
   );
-console.log("clientObject")
-console.log(clientObject)
+console.log("clientObject:--------")
+// console.log(clientObject)
   async function createMeeting(event, accessToken) {
     try {
       const response = await axios.post(
@@ -3326,866 +3558,185 @@ async function calculateCommonFreeSlotsGoogle(startTime, endTime, busySlots, jso
 
   return commonFreeSlots;
 }
-function calculateCommonFreeSlots(
+
+
+
+
+
+async function calculateCommonFreeSlots(
   startTime,
   endTime,
   busySlots,
   jsonData,
   calendarIds,
   optionalUsersEmails,
+  meeting_timeZone,
+  outOfOfficeEvents,
   oofResult
 ) {
-  console.log("calculateCommonFreeSlotsHit:--------------");
 
-  const busySlotsFlat = busySlots.flat();
+  try {
 
-  console.log("busySlotsFlat:----------")
-  console.log(busySlotsFlat)
+    console.log("calculateCommonFreeSlotsHit:--------------");
 
-  const meetings = busySlotsFlat.map((slot) => {
-    const formattedSlots = slot.scheduleItems.map((item) => ({
-      start: item.start.dateTime,
-      end: item.end.dateTime,
-    }));
-    return {
-      [slot.scheduleId]: formattedSlots,
-    };
-  });
-
-  const amsterdamTimeZone = "Europe/Amsterdam";
-
-  function convertToAmsterdamTime(utcDateTime) {
-    return moment.utc(utcDateTime).tz(amsterdamTimeZone).format();
-  }
-
-  // Map through meetings array and convert start and end times to Amsterdam timezone
-  const busyPeriods = meetings.map((meeting) => {
-    const updatedMeeting = {};
-    for (const key in meeting) {
-      updatedMeeting[key] = meeting[key].map((slot) => ({
-        start: convertToAmsterdamTime(slot.start),
-        end: convertToAmsterdamTime(slot.end),
-      }));
-    }
-    return updatedMeeting;
-  });
-
-  // console.log("busyPeriods:------------");
-  // console.log(busyPeriods);
-  // const a = JSON.stringify(busyPeriods);
-  // console.log(a);
-  const optionalUsersArray = busyPeriods.filter((period) => {
-    const email = Object.keys(period)[0];
-    return optionalUsersEmails.includes(email)
-;
-  });
-
-  console.log("optionalUsersArray:-------------");
-  // console.log(optionalUsersArray);
-  // Extract optional users and their corresponding values ---END---
-
-  // Remove optional users their corresponding values ---START---
-  const requiredUsersArray = busyPeriods.filter((period) => {
-    const email = Object.keys(period)[0];
-    return !optionalUsersEmails.includes(email)
-;
-  });
-
-  console.log("requiredUsersArray:------------");
-  console.log(requiredUsersArray);
-  // Remove optional users their corresponding values ---END---
+    const amsterdamTimeZone = meeting_timeZone;
   
-
-  const commonFreeSlots = findCommonFreeSlots(
-    startTime,
-    endTime,
-    requiredUsersArray,
-    jsonData,
-    oofResult
-  );
-
-  let { participants } = jsonData;
-
-  if (commonFreeSlots) {
-    const sendListsArr = commonFreeSlots.map((item) => item.sendList);
-    const emailSendListArray = sendListsArr.flat();
-    if (participants.length == emailSendListArray.length) {
-      commonFreeSlots = null;
+    function convertToAmsterdamTime(utcDateTime) {
+      return moment.utc(utcDateTime).tz(amsterdamTimeZone).format();
     }
-  }
-  return commonFreeSlots;
+  
+    const busySlotsFlat = busySlots.flat();
+  
+    // console.log("busySlotsFlat:---------");
+    // console.log(busySlotsFlat);
+    // const F = JSON.stringify(busySlotsFlat);
+    // console.log(F);
+  
+    let { participants } = jsonData;
+  
+    // console.log("busySlotsFlat:----------")
+    // console.log(busySlotsFlat)
+    // const a = JSON.stringify(busySlotsFlat);
+    // console.log(a);
+  
+    const meetings = busySlotsFlat.map((slot) => {
+      const formattedSlots = slot.scheduleItems.map((item) => ({
+        start: item.start.dateTime,
+        end: item.end.dateTime,
+      }));
+      return {
+        [slot.scheduleId]: formattedSlots,
+      };
+    });
+  
+    // console.log("meetings:------------")
+    // console.log(meetings)
+  
+    // Map through meetings array and convert start and end times to Amsterdam timezone
+    let busyPeriods = meetings.map((meeting) => {
+      const updatedMeeting = {};
+      for (const key in meeting) {
+        updatedMeeting[key] = meeting[key].map((slot) => ({
+          start: convertToAmsterdamTime(slot.start),
+          end: convertToAmsterdamTime(slot.end),
+        }));
+      }
+      return updatedMeeting;
+    });
+  
+    // console.log("busyPeriods:------------");
+    // console.log(busyPeriods);
+    // const a = JSON.stringify(busyPeriods);
+    // console.log(a);
+  
+    const freeTentativeWEWEvents = busySlotsFlat.flatMap((person) =>
+      person.scheduleItems
+        .filter((event) =>
+          ["tentative", "workingElsewhere", "free"].includes(event.status)
+        )
+        .map((event) => ({
+          scheduleId: person.scheduleId,
+          status: event.status,
+          startDateTime: convertToAmsterdamTime(event.start.dateTime),
+          endDateTime: convertToAmsterdamTime(event.end.dateTime),
+        }))
+    );
+  
+    // console.log("freeTentativeWEWEvents:----------");
+    // console.log(freeTentativeWEWEvents);
+  
+    if (freeTentativeWEWEvents.length != 0) {
+      let updatedBusyPeriods = busyPeriods.map((userBusyPeriods) => {
+        const [email, periods] = Object.entries(userBusyPeriods)[0];
+        const updatedPeriods = periods.filter((period) => {
+          return !freeTentativeWEWEvents.some(
+            (event) =>
+              event.scheduleId === email &&
+              event.startDateTime === period.start &&
+              event.endDateTime === period.end
+          );
+        });
+        return { [email]: updatedPeriods };
+      });
+  
+      busyPeriods = updatedBusyPeriods;
+  
+      // console.log("busyPeriods:------------");
+      // console.log(busyPeriods);
+      // const a = JSON.stringify(busyPeriods);
+      // console.log(a);
+    }
+  
+    // Extract optional users and their corresponding values ---START---
+    const optionalUsersArray = busyPeriods.filter((period) => {
+      const email = Object.keys(period)[0];
+      return optionalUsersEmails.includes(email);
+    });
+  
+    // console.log("optionalUsersArray:-------------");
+    // console.log(optionalUsersArray);
+    // Extract optional users and their corresponding values ---END---
+  
+    // Remove optional users their corresponding values ---START---
+    const requiredUsersArray = busyPeriods.filter((period) => {
+      const email = Object.keys(period)[0];
+      return !optionalUsersEmails.includes(email);
+    });
+  
+    console.log("requiredUsersArray:------------");
+    console.log(requiredUsersArray);
+    const RUA = JSON.stringify(requiredUsersArray)
+    console.log(RUA)
+    // Remove optional users their corresponding values ---END---
+  
+    let commonFreeSlots;
+  
+    commonFreeSlots = await findCommonFreeSlots(
+      startTime,
+      endTime,
+      requiredUsersArray,
+      jsonData,
+      oofResult
+    );
+  
+  
+  
+    if (commonFreeSlots) {
+      const sendListsArr = commonFreeSlots.map((item) => item.sendList);
+      const emailSendListArray = sendListsArr.flat();
+      if (participants.length == emailSendListArray.length) {
+        commonFreeSlots = null;
+      }
+    }
+  
+    return commonFreeSlots;
+
+
+}catch(error){
+  console.log(`Error in calculateCommonFreeSlots function: ${error}`)
+}
 }
 // FUNCTION TO CALCULATE COMMON FREE SLOTS BETWEEN AUTH USERS ---END---
 
 
 // FUNCTION TO FIND COMMON FREE SLOTS BETWEEN AUTH USERS ---START---
-// FUNCTION TO FIND COMMON FREE SLOTS BETWEEN AUTH USERS ---START---
-async function findCommonFreeSlotsBackup19April(start, end, busyPeriods, jsonDataFormate){
+async function findCommonFreeSlots(start, end, busyPeriods, jsonDataFormate,oofResult){
 
+  try {
   let data = jsonDataFormate;
   let users = busyPeriods;
-moment.tz.setDefault(data.meeting_timeZone);
-let freeSlotsResult = [],slotsResults = [],multiResult=[]
-  
-var startDate = moment(data.start_date).tz(data.meeting_timeZone);
-var endDate = moment(data.end_date).tz(data.meeting_timeZone);
 
-// Array to store the dates in between
-var datesInBetween = [];
-// Current date to start iteration
-var currentDate = startDate.clone();
-
-// Iterate through dates
-while (currentDate.isSameOrBefore(endDate)) {
-    datesInBetween.push(currentDate.format('YYYY-MM-DD'));
-    currentDate = moment.tz(currentDate.add(1, 'days'), data.meeting_timeZone);
-}
-let resArr,maxLen=-Infinity,maxLenMulti=-Infinity
-// Group events by date
-users.forEach(x=>{
-  let userEmail=Object.keys(x)[0]
-  let eventsList=x[userEmail]
-  var groupedEvents= eventsList.reduce((acc, event) => {
-  let eventStart=moment.tz(event.start, data.meeting_timeZone)
-  var date = moment(eventStart).format('YYYY-MM-DD');
-  if (!acc[date]) {
-      acc[date] = [];
-  }
-  acc[date].push(event);
-  return acc;
-}, {});
-x[userEmail]=groupedEvents
-})
-console.log(datesInBetween)
-
-let arr=[]
-let officeStart=moment('2024-03-27T08:00:00').tz(data.meeting_timeZone)
-let officeEnd=moment('2024-03-27T18:30:00').tz(data.meeting_timeZone)
-let morningEveningTime=moment("2024-01-06T12:00:00").tz(data.meeting_timeZone)
-
-for(let element of datesInBetween){
-
-        element=moment(element).tz(data.meeting_timeZone)
-        arr=[]
-        users.forEach(x=>{
-          let userEmail=Object.keys(x)[0]
-          let eventsList=x[userEmail]
-          var final=moment(element).format("YYYY-MM-DD")
-          arr.push({
-            [userEmail]:eventsList[final]?eventsList[final]:[]
-          })
-      
-        })
-      let startDatetime = officeStart.clone().set({
-        year: moment(element).year(),
-        month: moment(element).month(),
-        date: moment(element).date()
-      });
-      let endDatetime = officeEnd.clone().set({
-        year: moment(element).year(),
-        month: moment(element).month(),
-        date: moment(element).date()
-      });
-      let newMorningEveningTime = morningEveningTime.clone().set({
-        year: moment(element).year(),
-        month: moment(element).month(),
-        date: moment(element).date()
-      });
-      // console.log(arr,data.meeting_duration,startDatetime,endDatetime)
-      let morning=null,evening=null,fullDay=null,fixedStart=null,fixedEnd=null
-      if(data.meeting_timing==1){
-        fullDay=true
-      }
-      if(data.meeting_timing==2){
-        morning=true
-      }
-      if(data.meeting_timing==3){
-        evening=true
-      }
-      if(data.meeting_timing==4){
-        // Parse date and time separately
-      const date = moment(element, 'YYYY-MM-DD').tz(data.meeting_timeZone);
-      const time = moment(data.start_time, 'HH:mm:ss').tz(data.meeting_timeZone);
-      
-      // Merge date and time
-      const mergedDateTime = date.clone().add({
-        hours: time.hours(),
-        minutes: time.minutes(),
-        seconds: time.seconds()
-      });
-      const time2 = moment(data.end_time, 'HH:mm:ss').tz(data.meeting_timeZone);
-      const mergedDateTime2 = date.clone().add({
-        hours: time2.hours(),
-        minutes: time2.minutes(),
-        seconds: time2.seconds()
-      });
-      // console.log(mergedDateTime.format('YYYY-MM-DDTHH:mm:ss.SSSSSSS'));
-        fixedStart=moment(mergedDateTime.format('YYYY-MM-DDTHH:mm:ss')).tz(data.meeting_timeZone)
-        fixedEnd=moment(mergedDateTime2.format('YYYY-MM-DDTHH:mm:ss')).tz(data.meeting_timeZone)
-      }
-      let durationTime
-      if(data.meeting_duration){
-        durationTime=data.meeting_duration
-      }
-      if(data.meeting_min_duration){
-        durationTime=data.meeting_min_duration
-      }
-      let result=await getTime(arr,durationTime,startDatetime,endDatetime,morning,evening,fullDay,fixedStart,fixedEnd,newMorningEveningTime)
-      
-      // console.log("result:-----------")
-      console.log(result)
-      if(result){
-        if(maxLenMulti<=result.group.length){
-          if(maxLenMulti<result.group.length)multiResult=[]
-          maxLenMulti=result.group.length
-          multiResult.push(result)
-        }
-        if(result.sendList.length){
-            // return this result
-            if(maxLen<result.group.length){
-              maxLen=result.group.length
-                resArr=result
-            }
-        }else{
-          resArr=result
-          freeSlotsResult.push(resArr)
-          // return freeSlotsResult
-          break;
-        }
-      }
-      slotsResults.push(result)
-      if(datesInBetween.length==slotsResults.length){
-        if(resArr)freeSlotsResult.push(resArr)
-        else{
-          freeSlotsResult=null
-      }
-      // return freeSlotsResult
-      if(multiResult.length>1)freeSlotsResult=await findCommonTimeForMulti(multiResult)
-      break;
-      }
-}
-function findCommonTimeForMulti(arr){
-  let uniqueSlots = arr;
-
-  let min=-Infinity,minArr=[]
-  for (let index = 0; index < uniqueSlots.length; index++) {
-    const ele = uniqueSlots[index].group;
-    for (let j = 0; j < ele.length; j++) {
-      if(min<=ele[j].totalFreeTime){
-          if(min<ele[j].totalFreeTime&&minArr.length)minArr=[]
-          min=ele[j].totalFreeTime
-          minArr.push(uniqueSlots[index])
-      };
-      
-    }
-  }
-  let newMinArr
-  if(minArr. length>1){
-    min=-Infinity
-    newMinArr=[]
-    for (let j = 0; j < minArr.length; j++) {
-     
-        if(min<=minArr[j].totalFree){
-            if(min<minArr[j].totalFree&&newMinArr.length)newMinArr=[]
-            min=minArr[j].totalFree
-            newMinArr.push(minArr[j])
-        }; 
-    }
-    return newMinArr?newMinArr[0]:newMinArr
-  }
-  
-  return minArr.length?minArr[0]:minArr
-  }
-function getTime(users,duration,officeStart,officeEnd,morning,evening,fullDay,fixedStart,fixedEnd,newMorningEveningTime){
-   /********************************************* filter users according to durations in three array  *************************/
-  const filterUsers = (users, duration) => {
-    const fullDayBusyUsers = [];
-    const freeTimeUsers = [];
-    const lessThanDurationUsers = [];
-  
-    users.forEach(user => {
-      const userName = Object.keys(user)[0];
-      const userSlots = user[userName];
-
-      let totalFreeTime = 0
-      user['name']=userName
-      user['freeslots']=[]
-      user['freeslotsinmin']=[]
-      
-        for(let i=0;i<userSlots.length;i++){
-            if(i==0) { totalFreeTime=moment(moment(userSlots[i].start).tz(data.meeting_timeZone)).diff(officeStart, 'minutes')
-            if(totalFreeTime>0)
-            {user['freeslots'].push({
-                'start':moment(officeStart).tz(data.meeting_timeZone),
-                'end':moment(userSlots[i].start).tz(data.meeting_timeZone)
-            })
-            user['freeslotsinmin'].push(totalFreeTime)
-        }
-        }
-        if(i==userSlots.length-1) {
-                totalFreeTime=moment(officeEnd).diff(moment(userSlots[i].end).tz(data.meeting_timeZone), 'minutes')
-                if(totalFreeTime>0)
-                {user['freeslots'].push({
-                    'start':moment(userSlots[i].end).tz(data.meeting_timeZone),
-                    'end':moment(officeEnd).tz(data.meeting_timeZone)
-                })
-                user['freeslotsinmin'].push(totalFreeTime)
-            }
-        }
-        else{
-                totalFreeTime= moment(moment(userSlots[i+1]?.start)).diff(userSlots[i].end, 'minutes')
-                if(totalFreeTime>0)
-                {user['freeslots'].push({
-                    'start':moment(userSlots[i].end).tz(data.meeting_timeZone),
-                    'end':moment(userSlots[i+1]?.start).tz(data.meeting_timeZone)
-                })
-                user['freeslotsinmin'].push(totalFreeTime)
-            }
-        }
-        }
-        if(userSlots.length==0){
-          user['freeslots'].push({
-            'start':moment(officeStart).tz(data.meeting_timeZone),
-            'end':moment(officeEnd).tz(data.meeting_timeZone)
-        })
-        user['freeslotsinmin'].push(moment.duration(moment(officeEnd).diff(moment(officeStart))).asMinutes())
-        }
-      if (!user.freeslotsinmin.find(x=>x>0)) {
-        fullDayBusyUsers.push({ name: userName, freeMinutes: user.freeslots , freeTimeInMinutes:user.freeslotsinmin});
-      } else if (user.freeslotsinmin.find(x=>x>= duration) ) {
-        freeTimeUsers.push({ name: userName, freeMinutes: user.freeslots, freeTimeInMinutes:user.freeslotsinmin , totalFreeTime:user.freeslotsinmin.reduce((acc, currentValue) => acc + currentValue, 0)});
-      } else {
-        lessThanDurationUsers.push({ name: userName, freeMinutes: user.freeslots , freeTimeInMinutes:user.freeslotsinmin ,totalFreeTime:user.freeslotsinmin.reduce((acc, currentValue) => acc + currentValue, 0)});
-      }
-    });
-    return { fullDayBusyUsers, freeTimeUsers, lessThanDurationUsers };
-  };
-
-/*********************************************  make groups according common free time slot ******************/
-const findCommonFreeTimeSlotsGroup = (users) => {
-  let userGroups = [],maxlength=[],max=-Infinity,group=[],commonTimeForMax={'commonSlot':[]}
-  
-  for (let index = 0; index < users.length; index++) {
-      const element = users[index];
-      // group.push(element)
-      
-      for (let j = 0; j < element.freeMinutes.length; j++) {
-        let obj={}
-        group=[]
-        group.push(element)
-          let endElement =moment(element.freeMinutes[j].end).tz(data.meeting_timeZone);
-          let startElement = moment(element.freeMinutes[j].start).tz(data.meeting_timeZone);
-          let checkDuration=moment.duration(endElement.diff(startElement)).asMinutes()
-          let flag=false
-          if(morning){
-            if (startElement.isBefore(moment(newMorningEveningTime)) && moment.duration(newMorningEveningTime.diff(startElement)).asMinutes() >=duration && checkDuration>=duration) {
-              flag=true
-            }
-          } 
-          if(evening){
-            if (moment.duration(endElement.diff(newMorningEveningTime)).asMinutes() >=duration && endElement.isSameOrAfter(moment(newMorningEveningTime)) && checkDuration>=duration) {
-              flag=true
-            }
-          }
-          if(fullDay && checkDuration>=duration){
-              flag=true
-          }
-          if(fixedStart && fixedEnd){
-            let customStart=moment.max(moment(startElement),moment(fixedStart))
-            let customEnd=moment.min(moment(endElement),moment(fixedEnd))
-            let customSlotTime=moment.duration(customEnd.diff(customStart)).asMinutes()
-            if (customSlotTime>=duration) {
-              flag=true
-            }
-          }
-          if(flag){
-          for (let k = 0; k < users.length; k++) {
-            if(k!=index){
-              users[k].freeMinutes.forEach(element => {
-              
-               
-                let commonStart,commonEnd,commonSlotTime
-                let flagForCommon=false
-                if(obj?.commonSlot){
-                   commonStart=moment.max(moment(obj.commonSlot.start),moment(element.start))
-                   commonEnd=moment.min(moment(obj.commonSlot.end),moment(element.end))
-                   commonSlotTime=moment.duration(commonEnd.diff(commonStart)).asMinutes()
-                  
-                }else{
-                  commonStart=moment.max(moment(startElement),moment(element.start))
-                  commonEnd=moment.min(moment(endElement),moment(element.end))
-                  if(morning){
-                    commonEnd=moment.max(moment(commonStart),moment(newMorningEveningTime))
-                  }
-                  if(evening){
-                    commonStart=moment.min(moment(commonEnd),moment(newMorningEveningTime))
-                  }
-                  if(fixedStart&&fixedEnd){
-                    commonStart=moment.max(moment(commonStart),moment(fixedStart))
-                    commonEnd=moment.min(moment(commonEnd),moment(fixedEnd))
-                    
-                  }
-                  //  commonStart=moment.max(moment(startElement),moment(element.start))
-                  //  commonEnd=moment.min(moment(endElement),moment(element.end))
-                   commonSlotTime=moment.duration(commonEnd.diff(commonStart)).asMinutes()
-
-                }
-                if(morning){
-                  if (commonStart.isBefore(moment(newMorningEveningTime)) && commonEnd.isSameOrBefore(moment(newMorningEveningTime))) {
-                    flagForCommon=true
-                  }
-                } 
-                if(evening){
-                  if (commonStart.isSameOrAfter(moment(newMorningEveningTime)) && commonEnd.isAfter(moment(newMorningEveningTime))) {
-                    flagForCommon=true
-                  }
-                }
-                if(fullDay){
-                  flagForCommon=true
-                }
-                if(fixedStart&&fixedEnd){
-                  if (commonStart.isSameOrAfter(fixedStart) && commonEnd.isSameOrBefore(fixedEnd)) {
-                    flagForCommon=true
-                  }
-                }
-                if(commonSlotTime>=duration &&!group.find(x=>x.name==users[k].name)&&flagForCommon){
-                  group.push(users[k])
-                  // if(min>=commonSlotTime){
-                  //   min=commonSlotTime
-                  obj.commonSlot={'start':moment(commonStart),"end":moment(commonEnd)}
-                
-                // }
-                }
-            
-              });
-              }
-          }
-        /********************************************************** second iteration handling start ***********************************************/
-          if(data.scheduled_date&&data.scheduled_end_time&&data.scheduled_start_time&&obj.commonSlot){
-            let datePart = moment(data.scheduled_date,'YYYY-MM-DD').tz(data.meeting_timeZone);
-            let flagForMulti
-            flagForMulti=datePart.isSame(obj.commonSlot.start, 'day')
-            flagForMulti=datePart.isSame(obj.commonSlot.end, 'day')
-            let timePart = moment(data.scheduled_end_time, "HH:mm:ss").tz(data.meeting_timeZone);
-            let timePart2 = moment(data.scheduled_start_time, "HH:mm:ss").tz(data.meeting_timeZone);
-            let mergedDateTime1 = datePart.clone()
-              .hours(timePart.hours())
-              .minutes(timePart.minutes())
-              .seconds(timePart.seconds())
-              .tz(data.meeting_timeZone);
-              let mergedDateTime2 = datePart.clone()
-              .hours(timePart2.hours())
-              .minutes(timePart2.minutes())
-              .seconds(timePart2.seconds())
-              .tz(data.meeting_timeZone);
-            let diffFor2it=moment.duration(obj.commonSlot.end.diff(mergedDateTime1)).asMinutes()
-            let diffFor2it1=moment.duration(mergedDateTime2.diff(obj.commonSlot.start)).asMinutes()
-            const isOverlap =
-              (obj.commonSlot.start.isSameOrBefore(mergedDateTime2) && obj.commonSlot.end.isSameOrAfter(mergedDateTime2)) ||
-              (obj.commonSlot.start.isSameOrBefore(mergedDateTime1) && obj.commonSlot.end.isSameOrAfter(mergedDateTime1)) ||
-              (mergedDateTime2.isSameOrBefore(obj.commonSlot.start) && mergedDateTime1.isSameOrAfter(obj.commonSlot.end));
-          if(isOverlap&&flagForMulti){
-            let flagForIt=false
-            let flagCheck=false
-            if(diffFor2it1>=duration){
-              obj.commonSlot.end=mergedDateTime2
-              flagForIt=true
-              flagCheck=true
-            }
-            if(diffFor2it>=duration&&!flagCheck){
-              obj.commonSlot.start=mergedDateTime1
-              flagForIt=true
-            }
-            // else{
-            //   obj.commonSlot=undefined
-            // }
-            if(diffFor2it1>=duration&&!flagCheck){
-              obj.commonSlot.end=mergedDateTime2
-              flagForIt=true
-            }
-            if(!flagForIt){
-              obj.commonSlot=undefined
-            }
-          }
-        }
-
-        if(data.scheduled_date&&data.scheduled_end_time&&data.scheduled_start_time&&!obj.commonSlot){
-          let datePart = moment(data.scheduled_date,'YYYY-MM-DD').tz(data.meeting_timeZone);
-          let flagForMulti
-            flagForMulti=datePart.isSame(endElement, 'day')
-            flagForMulti=datePart.isSame(startElement, 'day')
-          let timePart = moment(data.scheduled_end_time, "HH:mm:ss").tz(data.meeting_timeZone);
-          let timePart2 = moment(data.scheduled_start_time, "HH:mm:ss").tz(data.meeting_timeZone);
-          let mergedDateTime1 = datePart.clone()
-            .hours(timePart.hours())
-            .minutes(timePart.minutes())
-            .seconds(timePart.seconds())
-            .tz(data.meeting_timeZone);
-            let mergedDateTime2 = datePart.clone()
-            .hours(timePart2.hours())
-            .minutes(timePart2.minutes())
-            .seconds(timePart2.seconds())
-            .tz(data.meeting_timeZone);
-          let diffFor2it=moment.duration(endElement.diff(mergedDateTime1)).asMinutes()
-          let diffFor2it1=moment.duration(mergedDateTime2.diff(startElement)).asMinutes()
-          const isOverlap1 =
-            (startElement.isSameOrBefore(mergedDateTime2) && endElement.isSameOrAfter(mergedDateTime2)) ||
-            (startElement.isSameOrBefore(mergedDateTime1) && endElement.isSameOrAfter(mergedDateTime1)) ||
-            (mergedDateTime2.isSameOrBefore(startElement) && mergedDateTime1.isSameOrAfter(endElement));
-        if(isOverlap1&&flagForMulti){
-          let flagForIt=false
-          let flagCheck=false
-          if(diffFor2it1>=duration){
-            endElement=mergedDateTime2
-            flagForIt=true
-            flagCheck=true
-          }
-          if(diffFor2it>=duration&&!flagCheck){
-            startElement=mergedDateTime1
-            flagForIt=true
-          }
-          // else{
-          //   obj.commonSlot=undefined
-          // }
-          if(diffFor2it1>=duration&&!flagCheck){
-            endElement=mergedDateTime2
-            flagForIt=true
-          }
-          if(!flagForIt){
-            endElement=undefined
-            startElement=undefined
-          }
-        }
-      }
-      /********************************************************** second iteration handling end ***********************************************/
-          obj.usersGroup=group
-          userGroups.push(obj)
-          if(max<=group.length){
-            if(max<group.length&&maxlength.length)maxlength=[]
-            max=group.length
-            if(obj.commonSlot){
-            maxlength.push({
-              'group':group,
-              'commonSlot':obj.commonSlot
-            })
-          }
-          else{
-            if(endElement&&startElement)
-           { maxlength.push({
-              'group':group,
-              'commonSlot':{'start':startElement,"end":endElement}
-            })
-          }
-          // else{
-          //   maxlength=[]
-          // }
-            
-          }
-            
-            commonTimeForMax.maxUserGroup=maxlength
-            
-            commonTimeForMax.commonSlot.push(obj.commonSlot)
-          }
-          obj={}
-          group=[];}
-      }
-      
-  }
-
-  // when all user dont have common slot but available slots are greater then duration some slots already handled in previous loop but in some cases we have to handle specificaly
-  if(!commonTimeForMax.commonSlot.find(x=>x)&&commonTimeForMax.maxUserGroup){
-     let groupIn=[],obj={},userGroup=[],slot=[]
-        commonTimeForMax.maxUserGroup.forEach(x=>{
-        if(x.group.length==1){
-            x.group[0].freeMinutes.forEach(ele => {
-                let commonStart,commonEnd,commonSlotTime
-                      commonEnd=moment(ele.end).tz(data.meeting_timeZone)
-                      commonStart=moment(ele.start).tz(data.meeting_timeZone)
-                      commonSlotTime=moment.duration(commonEnd.diff(commonStart)).asMinutes()
-                      let flagForIt=false
-                      if(data.scheduled_date&&data.scheduled_end_time&&data.scheduled_start_time&&commonSlotTime>=duration){
-                        
-                        let datePart = moment(data.scheduled_date);
-                        let timePart = moment(data.scheduled_end_time, "HH:mm:ss");
-                        let timePart2 = moment(data.scheduled_start_time, "HH:mm:ss");
-                        let mergedDateTime1 = datePart.clone()
-                          .hours(timePart.hours())
-                          .minutes(timePart.minutes())
-                          .seconds(timePart.seconds())
-                          .tz(data.meeting_timeZone);
-                          let mergedDateTime2 = datePart.clone()
-                          .hours(timePart2.hours())
-                          .minutes(timePart2.minutes())
-                          .seconds(timePart2.seconds())
-                          .tz(data.meeting_timeZone);
-                        let diffFor2it=moment.duration(commonEnd.diff(mergedDateTime1)).asMinutes()
-                        let diffFor2it1=moment.duration(mergedDateTime2.diff(commonStart)).asMinutes()
-                        const isOverlap =
-                          (commonStart.isSameOrBefore(mergedDateTime2) && commonEnd.isSameOrAfter(mergedDateTime2)) ||
-                          (commonStart.isSameOrBefore(mergedDateTime1) && commonEnd.isSameOrAfter(mergedDateTime1)) ||
-                          (mergedDateTime2.isSameOrBefore(commonStart) && mergedDateTime1.isSameOrAfter(commonEnd));
-                      if(isOverlap){
-                        flagForIt=true
-                        let flagCheck=false
-                        if(diffFor2it1>=duration){
-                          commonEnd=mergedDateTime2
-                          flagForIt=false
-                          flagCheck=true
-                        }
-                        if(diffFor2it>=duration&&!flagCheck){
-                          commonStart=mergedDateTime1
-                          flagForIt=false
-                        }
-                        // else{
-                        //   obj.commonSlot=undefined
-                        // }
-                        
-                        // if(!flagForIt){
-                        //   obj.commonSlot=undefined
-                        // }
-                      }
-                    }
-                      let flagForCommonTime=false
-                      if(morning){
-                        //startElement.isBefore(moment(newMorningEveningTime)) && moment.duration(newMorningEveningTime.diff(startElement)).asMinutes() >=duration
-                        if (commonStart.isBefore(moment(newMorningEveningTime)) && moment.duration(newMorningEveningTime.diff(commonStart)).asMinutes() >=duration) {
-                          flagForCommonTime=true
-                        }
-                      } 
-                      if(evening){
-                        if (commonStart.isSameOrAfter(moment(newMorningEveningTime)) && commonEnd.isAfter(moment(newMorningEveningTime))) {
-                          flagForCommonTime=true
-                        }
-                      }
-                      if(fullDay){
-                        flagForCommonTime=true
-                      }
-                      if(fixedStart&&fixedEnd){
-                        if (commonStart.isSameOrAfter(fixedStart) && commonEnd.isSameOrBefore(fixedEnd)) {
-                          flagForCommonTime=true
-                        }
-                      }
-                    if(commonSlotTime>=duration &&!groupIn.find(y=>y.name==x.group[0].name)&&flagForCommonTime&&!flagForIt){
-                          groupIn.push(x.group[0])
-                      // if(min>=commonSlotTime){
-                      //   min=commonSlotTime
-                      obj.commonSlot={'start':moment(commonStart),"end":moment(commonEnd)}
-                      obj.group=groupIn
-                      userGroup.push(obj);
-                      slot.push(obj.commonSlot)
-                      groupIn=[]
-                      obj={}
-                    // }
-                    }
-            });
-            
-        }
-      })
-      commonTimeForMax.maxUserGroup=userGroup;
-      commonTimeForMax.commonSlot=slot;
-}
-let newFlagFor2
-if(commonTimeForMax.maxUserGroup){
-  newFlagFor2=commonTimeForMax.maxUserGroup.length>0
-}
-    return userGroups.length>0&&newFlagFor2?[userGroups,commonTimeForMax]:undefined;
-  };
-  
- /********************************************* handling for getting best time slot from multiple groups have time slots  *************************/
-const findCommonTimeAndUsers=(arr)=>{
-const uniqueSlots = [];
-const seenSlots = {};
-
-arr[1].maxUserGroup.forEach(item => {
-    const { start, end } = item.commonSlot;
-    const slotKey = `${start}-${end}`;
-
-    if (!seenSlots[slotKey]) {
-        seenSlots[slotKey] = true;
-        uniqueSlots.push(item);
-    }
-});
-
-// console.log(uniqueSlots);
-let min=Infinity,minArr=[]
-for (let index = 0; index < uniqueSlots.length; index++) {
-  const ele = uniqueSlots[index].group;
-  for (let j = 0; j < ele.length; j++) {
-    uniqueSlots[index].totalFree=uniqueSlots[index].totalFree?uniqueSlots[index].totalFree+ele[j].totalFreeTime:ele[j].totalFreeTime
-    if(min>=ele[j].totalFreeTime){
-        if(min>ele[j].totalFreeTime&&minArr.length)minArr=[]
-        min=ele[j].totalFreeTime
-        minArr.push(uniqueSlots[index])
-    };
-    
-  }
-}
-let newMinArr
-if(minArr. length>1){
-  min=Infinity
-  newMinArr=[]
-  for (let j = 0; j < minArr.length; j++) {
-   
-      if(min>=minArr[j].totalFree){
-          if(min>minArr[j].totalFree&&newMinArr.length)newMinArr=[]
-          min=minArr[j].totalFree
-          newMinArr.push(minArr[j])
-      }; 
-  }
-  return newMinArr
-}
-
-return minArr
-}
-
-
-// if we have users in lessduration then we check previously selected time slot in this  
-let findSlotLessDuration=(lessDur,resPre)=>{
-let finalGroup,max=-Infinity,res
-        for (let i = 0; i < resPre.length; i++) {
-          const ele = resPre[i].commonSlot;
-          finalGroup=[]
-          for (let j = 0; j < lessDur.length; j++) {
-              lessDur[j].freeMinutes.forEach(x=>{
-                  let commonStart=moment.max(moment(ele.start),moment(x.start))
-                  let commonEnd=moment.min(moment(ele.end),moment(x.end))
-                  let commonSlotTime=moment.duration(commonEnd.diff(commonStart)).asMinutes()
-                  if(commonSlotTime>0 &&!finalGroup.find(x=>x.name==lessDur[j].name)){
-                        finalGroup.push(lessDur[j])
-                  }
-              })
-              
-          }
-          if(max<finalGroup.length){
-            max=finalGroup.length
-            res=resPre[i]
-          }
-        }
-        return res
-}
-
-
-let findClosestTime=(arr)=>{
-    const targetDuration = duration
-    let closestTimeSlot = null;
-    let minDifference = Infinity;
-
-    arr.forEach(userSchedule => {
-       userSchedule.freeMinutes.forEach(slot => {
-                const start = moment(slot.start);
-                const end = moment(slot.end);
-                const duration = moment.duration(end.diff(start)).asMinutes();
-
-                const difference = Math.abs(duration - targetDuration);
-                if (difference < minDifference) {
-                    minDifference = difference;
-                    closestTimeSlot = {start, end};
-                }
-           
-        });
-    });
-
-function adjustTimeSlot(timeSlot) {
-  const start = timeSlot.start.clone();
-  const adjustedend = start.clone().add(duration, 'minutes');
-  return { start, end: adjustedend };
-}
-if(morning){
-  //startElement.isBefore(moment(newMorningEveningTime)) && moment.duration(newMorningEveningTime.diff(startElement)).asMinutes() >=duration
-  if (closestTimeSlot.start.isBefore(moment(newMorningEveningTime)) && closestTimeSlot.end.isSameOrBefore(fixedStart)) {
-    
-  }else{
-    closestTimeSlot=null
-  }
-} 
-if(evening){
-  if (closestTimeSlot.start.isSameOrAfter(moment(newMorningEveningTime)) && closestTimeSlot.end.isAfter(moment(newMorningEveningTime))) {
-    
-  }else{
-    closestTimeSlot=null
-  }
-}
-if(fixedStart&&fixedEnd){
-  if (closestTimeSlot.start.isSameOrAfter(fixedStart) && closestTimeSlot.end.isSameOrBefore(fixedEnd)) {
-    
-  }else{
-    closestTimeSlot=null
-  }
-}
-if (closestTimeSlot) {
-  let sendMail= []
-  users.forEach(x=>{sendMail.push(x.name)})
-  return {
-    group:[],
-    commonSlot:adjustTimeSlot(closestTimeSlot),
-    sendList:sendMail
-  }
-}
-}
-
-let res
-const { fullDayBusyUsers, freeTimeUsers, lessThanDurationUsers } = filterUsers(users, duration);
-
-if(fullDayBusyUsers.length==users.length){
-return null
-}
-
-let commonFreeTimeSlotsGroups
-     if(freeTimeUsers.length>0){
-      commonFreeTimeSlotsGroups= findCommonFreeTimeSlotsGroup(freeTimeUsers);
-     }
-
-let slotAndUsers
-     if(commonFreeTimeSlotsGroups){
-       slotAndUsers=findCommonTimeAndUsers(commonFreeTimeSlotsGroups)
-       res=slotAndUsers
-     }
-let final
-     if (lessThanDurationUsers.length>0&&slotAndUsers) {
-       final=findSlotLessDuration(lessThanDurationUsers,slotAndUsers)
-       res=final
-     }
-let  closestFreeSlot
-if(lessThanDurationUsers.length==users.length){
-   closestFreeSlot=findClosestTime(lessThanDurationUsers)
-   console.log(closestFreeSlot)
-}
-let finalUserList=new Set()
-if(res){
-  users.forEach(x=>{
-    if(!Array.isArray(res))
-      {
-        if(!res.group.find(y=>y.name==x.name))finalUserList.add(x.name)
-      }
-    else{
-      if(res.length>0){
-      res=res[0]
-      if(!res.group.find(y=>y.name==x.name))finalUserList.add(x.name)
-    }else return null
-    }
-  })
-  if(!Array.isArray(res)){
-    res.sendList=[...finalUserList]
-  }
-  else{
-    res=undefined
-  }
-}
-
-
- return res?res:(closestFreeSlot?closestFreeSlot:null)
-}
-console.log(freeSlotsResult)
-return freeSlotsResult
-}
-async function findCommonFreeSlots(start, end, busyPeriods, jsonDataFormate,oofResult){
-  let data = jsonDataFormate;
-let users = busyPeriods;
 moment.tz.setDefault(data.meeting_timeZone);
 let freeSlotsResult = [],slotsResults = [],multiResult=[],resCheck
   
-var startDate = moment(data.start_date).tz(data.meeting_timeZone);
-var endDate = moment(data.end_date).tz(data.meeting_timeZone);
+// var startDate = moment(data.start_date).tz(data.meeting_timeZone);
+// var endDate = moment(data.end_date).tz(data.meeting_timeZone);
+
+      var startDate = moment(data.start_date, "YYYY-MM-DD").tz(
+        data.meeting_timeZone
+      );
+      var endDate = moment(data.end_date, "YYYY-MM-DD").tz(data.meeting_timeZone);
+
 
 // Array to store the dates in between
 var datesInBetween = [];
@@ -4197,6 +3748,7 @@ while (currentDate.isSameOrBefore(endDate)) {
     datesInBetween.push(currentDate.format('YYYY-MM-DD'));
     currentDate = moment.tz(currentDate.add(1, 'days'), data.meeting_timeZone);
 }
+
 let resArr,maxLen=-Infinity,maxLenMulti=-Infinity
 
 // Group events by date
@@ -4214,12 +3766,27 @@ users.forEach(x=>{
 }, {});
 x[userEmail]=groupedEvents
 })
+
+// console.log("users after first for loop in ALGO:------")
+// console.log(users)
+// const U = JSON.stringify(users)
+// console.log(U)
+
+
+console.log("datesInBetween in ALGO:--------------")
 console.log(datesInBetween)
 
+
+
 let arr=[]
+
+// let officeStart=moment('2024-03-27T08:00:00').tz(data.meeting_timeZone)
+// let officeEnd=moment('2024-03-27T18:30:00').tz(data.meeting_timeZone)
+
 let officeStart=moment('2024-03-27T08:30:00').tz(data.meeting_timeZone)
 let officeEnd=moment('2024-03-27T17:00:00').tz(data.meeting_timeZone)
 let morningEveningTime=moment("2024-01-06T12:00:00").tz(data.meeting_timeZone)
+
 for(let element of datesInBetween){
 
           element=moment(element).tz(data.meeting_timeZone)
@@ -4248,8 +3815,24 @@ for(let element of datesInBetween){
           month: moment(element).month(),
           date: moment(element).date()
         });
+
+
+
+        // console.log("startDatetime in ALGO:--------------")
+        // console.log(startDatetime)
+
+        // console.log("endDatetime in ALGO:--------------")
+        // console.log(endDatetime)
+
+        // console.log("newMorningEveningTime in ALGO:--------------")
+        // console.log(newMorningEveningTime)
+
+
+
         // console.log(arr,data.meeting_duration,startDatetime,endDatetime)
         let morning=null,evening=null,fullDay=null,fixedStart=null,fixedEnd=null
+
+
         if(data.meeting_timing==1){
           fullDay=true
         }
@@ -4280,17 +3863,25 @@ for(let element of datesInBetween){
           fixedStart=moment(mergedDateTime.format('YYYY-MM-DDTHH:mm:ss')).tz(data.meeting_timeZone)
           fixedEnd=moment(mergedDateTime2.format('YYYY-MM-DDTHH:mm:ss')).tz(data.meeting_timeZone)
         }
+
+
         let durationTime
+
         if(data.meeting_duration){
           durationTime=data.meeting_duration
         }
         if(data.meeting_min_duration){
           durationTime=data.meeting_min_duration
         }
+
+
         let result=await getTime(arr,durationTime,startDatetime,endDatetime,morning,evening,fullDay,fixedStart,fixedEnd,newMorningEveningTime)
         
-        // console.log("result:-----------")
-        console.log(result)
+        
+        // console.log("result from getTime function in ALGO:-----------")
+        // console.log(result)
+
+
         if(result){
           if(maxLenMulti<=result.group.length){
             if(maxLenMulti<result.group.length)multiResult=[]
@@ -4310,6 +3901,8 @@ for(let element of datesInBetween){
             break;
           }
         }
+
+
         slotsResults.push(result)
         if(datesInBetween.length==slotsResults.length){
           if(resArr)freeSlotsResult.push(resArr)
@@ -4364,6 +3957,8 @@ function findCommonTimeForMulti(arr){
   
   return minArr.length?minArr[0]:minArr
   }
+
+
 
   function secondIterationHandling(meeting_log, meeting_timeZone, duration, commonStart, commonEnd) {
     console.log("secondIterationHandling HIT:-------------------");
@@ -4437,6 +4032,9 @@ function findCommonTimeForMulti(arr){
   }
 
 
+
+
+
  function outOfOfficeHandling(oofResult, meeting_timeZone, duration, commonStart, commonEnd) {
   console.log("outOfOfficeHandling HIT:-------------------");
 
@@ -4445,16 +4043,16 @@ function findCommonTimeForMulti(arr){
 
 
 
-const proposedMeeting = oofResult.map(slot => {
-const startTime = moment(slot.suitableStartTime).tz(meeting_timeZone);
-const endTime = moment(slot.suitableEndTime).tz(meeting_timeZone);
+  const proposedMeeting = oofResult.map(slot => {
+  const startTime = moment(slot.suitableStartTime).tz(meeting_timeZone);
+  const endTime = moment(slot.suitableEndTime).tz(meeting_timeZone);
 
-return {
+  return {
     proposed_meeting_date: startTime.format('YYYY-MM-DD'),
     proposed_start_time: startTime.format('HH:mm:ss'),
     proposed_end_time: endTime.format('HH:mm:ss')
-};
-});
+  };
+  });
 
 console.log("proposedMeeting in outOFOfficeHandling function")
 console.log(proposedMeeting)
@@ -4522,9 +4120,9 @@ console.log(proposedMeeting)
       }
   }
 
-  let iterationTwo = [commonStart, commonEnd];
-  console.log("common free slots from outOfOfficeHandling:--------");
-  console.log(iterationTwo);
+  let newTimeAfterOOF = [commonStart, commonEnd];
+  console.log("newTimeAfterOOF from outOfOfficeHandling:--------");
+  console.log(newTimeAfterOOF);
   return [commonStart, commonEnd];
 }
 
@@ -4535,7 +4133,14 @@ function getTime(users,duration,officeStart,officeEnd,morning,evening,fullDay,fi
     const fullDayBusyUsers = [];
     const freeTimeUsers = [];
     const lessThanDurationUsers = [];
+
+
+    // console.log("First users in getTime function in ALGO:---------")
+    // console.log(users)
+    // const UG = JSON.stringify(users)
+    // console.log(UG)
   
+    
     users.forEach(user => {
       const userName = Object.keys(user)[0];
       const userSlots = user[userName];
@@ -4632,10 +4237,19 @@ const findCommonFreeTimeSlotsGroup = (users) => {
               flag=true
             }
           }
+          
+
           if(flag){
           for (let k = 0; k < users.length; k++) {
             if(k!=index){
               users[k].freeMinutes.forEach(element => {
+
+
+
+                // console.log("users in flag true condition getTime function in ALGO:---------")
+                // console.log(users)
+                // const UF = JSON.stringify(users)
+                // console.log(UF)
               
               
                 let commonStart,commonEnd,commonSlotTime
@@ -4647,21 +4261,29 @@ const findCommonFreeTimeSlotsGroup = (users) => {
                   
                 }else{
                   commonStart=moment.max(moment(startTimeElement),moment(element.start))
-                  commonEnd=moment.min(moment(endTimeElement),moment(element.end))
+                  commonEnd=moment.min(moment(endTimeElement),moment(element.end))                
                   if(morning){
-                    commonEnd=moment.max(moment(commonStart),moment(newMorningEveningTime))
+                    // commonEnd=moment.max(moment(commonStart),moment(newMorningEveningTime))
+                    commonEnd = moment.min(commonEnd, moment(newMorningEveningTime));
                   }
+
                   if(evening){
-                    commonStart=moment.min(moment(commonEnd),moment(newMorningEveningTime))
+                    // commonStart=moment.min(moment(commonEnd),moment(newMorningEveningTime))
+                    commonStart = moment.max(commonStart, moment(newMorningEveningTime));
                   }
+
                   if(fixedStart&&fixedEnd){
-                    commonStart=moment.max(moment(commonStart),moment(fixedStart))
-                    commonEnd=moment.min(moment(commonEnd),moment(fixedEnd))
+                    commonStart = moment.max(moment(commonStart),moment(fixedStart))
+                    commonEnd = moment.min(moment(commonEnd),moment(fixedEnd))
+
+                    // commonStart = moment.max(commonStart, moment(fixedStart));
+                    // commonEnd = moment.min(commonEnd, moment(fixedEnd));
                     
                   }
-                  commonSlotTime=moment.duration(commonEnd.diff(commonStart)).asMinutes()
-
+                  commonSlotTime = moment.duration(commonEnd.diff(commonStart)).asMinutes();
                 }
+
+
                 if(morning){
                   if (commonStart.isBefore(moment(newMorningEveningTime)) && commonEnd.isSameOrBefore(moment(newMorningEveningTime))) {
                     flagForCommon=true
@@ -4674,6 +4296,8 @@ const findCommonFreeTimeSlotsGroup = (users) => {
                 }
                 if(fullDay){
                   flagForCommon=true
+
+                  console.log("fullDay HIT:-----------")
                 }
                 if(fixedStart&&fixedEnd){
                   if (commonStart.isSameOrAfter(fixedStart) && commonEnd.isSameOrBefore(fixedEnd)) {
@@ -4689,6 +4313,8 @@ const findCommonFreeTimeSlotsGroup = (users) => {
               });
               }
           }
+
+
         /********************************************************** second iteration handling start ***********************************************/
         if(data.activity.length != 0 && obj.commonSlot){
           val=secondIterationHandling(data.activity,data.meeting_timeZone ,duration,obj.commonSlot.start,obj.commonSlot.end)
@@ -4719,11 +4345,15 @@ const findCommonFreeTimeSlotsGroup = (users) => {
         if(val[1]){
           endTimeElement=val[1]
         }}
-      }
+        }
+        /********************************************************** second iteration handling end ***********************************************/
 
 
 
-      if(oofResult.length != 0 && obj.commonSlot){
+
+
+        /********************************************************** Out of office handling start ***********************************************/
+        if(oofResult.length != 0 && obj.commonSlot){
           val=outOfOfficeHandling(oofResult,data.meeting_timeZone ,duration,obj.commonSlot.start,obj.commonSlot.end)
         if(Array.isArray(val)){
           if(!val[0]&&!val[1]){
@@ -4731,9 +4361,15 @@ const findCommonFreeTimeSlotsGroup = (users) => {
         }
         if(val[0]){
           obj.commonSlot.start=val[0]
+          const P = val[0]
+          console.log("obj.commonSlot.start when obj.commonSlot in ALGO:-----------")
+          console.log(P)
         }
         if(val[1]){
           obj.commonSlot.end=val[1]
+          const O = val[1]
+          console.log("obj.commonSlot.end when obj.commonSlot in ALGO:-----------")
+          console.log(O)
         }}
         }
   
@@ -4748,12 +4384,19 @@ const findCommonFreeTimeSlotsGroup = (users) => {
         }
         if(val[0]){
           startTimeElement=val[0]
+          const I = val[0]
+          console.log("obj.commonSlot.start when !obj.commonSlot in ALGO:-----------")
+          console.log(I)
         }
         if(val[1]){
           endTimeElement=val[1]
+          const U = val[1]
+          console.log("obj.commonSlot.start when !obj.commonSlot in ALGO:-----------")
+          console.log(U)
         }}
-      }
-      /********************************************************** second iteration handling end ***********************************************/
+        }
+        /********************************************************** Out of office handling end ***********************************************/
+
           obj.usersGroup=group
           userGroups.push(obj)
           if(max<=group.length){
@@ -4780,7 +4423,8 @@ const findCommonFreeTimeSlotsGroup = (users) => {
             commonTimeForMax.commonSlot.push(obj.commonSlot)
           }
           obj={}
-          group=[];}
+          group=[];
+        }
       }
       
   }
@@ -4839,8 +4483,18 @@ const findCommonFreeTimeSlotsGroup = (users) => {
                         }
                       } 
                       if(evening){
+
+                        console.log("commonStart in evening before condition in ALGO:-------")
+                        console.log(commonStart)
+                        console.log("commonEnd in evening before condition in ALGO:-------")
+                        console.log(commonEnd)
+
                         if (commonStart.isSameOrAfter(moment(newMorningEveningTime)) && commonEnd.isAfter(moment(newMorningEveningTime))) {
                           flagForCommonTime=true
+                          console.log("commonStart in evening in ALGO:-------")
+                          console.log(commonStart)
+                          console.log("commonEnd in evening in ALGO:-------")
+                          console.log(commonEnd)
                         }
                       }
                       if(fullDay){
@@ -5059,7 +4713,13 @@ if(res){
 
 return res?res:(closestFreeSlot?closestFreeSlot:null)
 }
+
+console.log("freeSlotsResult in ALGO:------------")
+console.log(freeSlotsResult)
 return freeSlotsResult
+  }catch(error){
+    console.log(`Error in findCommonFReeSlots function: ${error}`)
+  }
 }
 // FUNCTION TO FIND COMMON FREE SLOTS BETWEEN AUTH USERS ---END---
 
@@ -5117,16 +4777,18 @@ async function blockTimeSlot(
   participants,
   jsonData
 ) {
+
+  try {
   // const amsterdamTimeZone = 'Europe/Amsterdam';
 
   console.log(
     "All users are not available on the suitable time, blockTimeSlotHIT:-------------"
   );
 
-  console.log("Participants:-------------")
-  console.log(participants)
-  console.log("calendarIds:-------------")
-  console.log(calendarIds)
+  // console.log("Participants:-------------")
+  // console.log(participants)
+  // console.log("calendarIds:-------------")
+  // console.log(calendarIds)
 
   const amsterdamTimeZone = meeting_timeZone;
 
@@ -5145,7 +4807,7 @@ async function blockTimeSlot(
   );
 
   console.log("availableUsersArray:------------")
-  console.log(availableUsersArray)
+  // console.log(availableUsersArray)
 
   const summary = "Blocked Time";
 
@@ -5248,11 +4910,17 @@ const blockTimeID = userIDOrganizer
 console.log("blockTimeID:-------------");
 console.log(blockTimeID);
 return blockTimeID;
+
+}catch(error){
+  console.log(`Error in blockTimeSLot function: ${error}`)
+}
   
 }
 // FUNCTION TO BLOCK THE USERS TIME SLOT ---END---
 // FUNCTION TO AUTHORIZE USERS ---START---
 async function authorize(calendarIds) {
+
+  try {
   // let client = await loadSavedCredentialsIfExist(calendarIds);
   // if (client) {
   //   console.log("User Already Authorized");
@@ -5276,6 +4944,9 @@ async function authorize(calendarIds) {
   // (e.g., wait for user interaction, provide instructions)
 
   return true; // Indicate that authorization is pending
+  }catch(error){
+    console.log(`Error in authorize function: ${error}`)
+  }
 }
 // FUNCTION TO AUTHORIZE USERS ---END---
 
@@ -5805,9 +5476,11 @@ async function dataForLogs(
   meeting_timeZone,
   currentTime
 ) {
+
+  try {
   console.log("dataForLogsHit:--------------");
 
-  const busySlotsFlat = busySlots.flat();
+  let busySlotsFlat = busySlots.flat();
 
   // console.log("startTime:------------");
   // console.log(startTime);
@@ -5839,7 +5512,7 @@ async function dataForLogs(
   }
 
   // Map through meetings array and convert start and end times to Amsterdam timezone
-  const busyPeriods = meetings.map((meeting) => {
+  let busyPeriods = meetings.map((meeting) => {
     const updatedMeeting = {};
     for (const key in meeting) {
       updatedMeeting[key] = meeting[key].map((slot) => ({
@@ -5854,6 +5527,53 @@ async function dataForLogs(
   // console.log(busyPeriods);
   // const a = JSON.stringify(busyPeriods);
   // console.log(a);
+
+
+
+
+
+
+
+
+
+  const freeTentativeWEWEvents = busySlotsFlat.flatMap((person) =>
+    person.scheduleItems
+      .filter((event) =>
+        ["tentative", "workingElsewhere", "free"].includes(event.status)
+      )
+      .map((event) => ({
+        scheduleId: person.scheduleId,
+        status: event.status,
+        startDateTime: convertToAmsterdamTime(event.start.dateTime),
+        endDateTime: convertToAmsterdamTime(event.end.dateTime),
+      }))
+  );
+
+  // console.log("freeTentativeWEWEvents:----------");
+  // console.log(freeTentativeWEWEvents);
+
+  if (freeTentativeWEWEvents.length != 0) {
+    let updatedBusyPeriods = busyPeriods.map((userBusyPeriods) => {
+      const [email, periods] = Object.entries(userBusyPeriods)[0];
+      const updatedPeriods = periods.filter((period) => {
+        return !freeTentativeWEWEvents.some(
+          (event) =>
+            event.scheduleId === email &&
+            event.startDateTime === period.start &&
+            event.endDateTime === period.end
+        );
+      });
+      return { [email]: updatedPeriods };
+    });
+
+    busyPeriods = updatedBusyPeriods;
+
+    // console.log("busyPeriods:------------");
+    // console.log(busyPeriods);
+    // const a = JSON.stringify(busyPeriods);
+    // console.log(a);
+  }
+
 
   // Function to calculate free time slots for a user
   function calculateFreeSlots(busySlots) {
@@ -6025,7 +5745,9 @@ async function dataForLogs(
     return map;
   }, {});
 
-  const enrichedSlotsByDate = freeSlotsByDate.map(dateEntry => {
+
+
+  let enrichedSlotsByDate = freeSlotsByDate.map(dateEntry => {
     return {
       ...dateEntry,
       slots: dateEntry.slots.map(slot => {
@@ -6047,8 +5769,81 @@ async function dataForLogs(
     };
   });
 
-  // console.log("enrichedSlotsByDate:-------------")
-  // console.log(enrichedSlotsByDate)
+
+  console.log("enrichedSlotsByDate:-------------")
+  console.log(enrichedSlotsByDate)
+  const ESBD = JSON.stringify(enrichedSlotsByDate)
+  console.log(ESBD)
+
+
+  console.log("freeTentativeWEWEvents:-------------")
+  console.log(freeTentativeWEWEvents)
+  const FTWE = JSON.stringify(freeTentativeWEWEvents)
+  console.log(FTWE)
+
+
+
+
+  const updateTimesWithStatus = (times, events, email) => {
+    let result = [];
+  
+    times.forEach(time => {
+      let startTime = moment(time.start);
+      let endTime = moment(time.end);
+  
+      events.forEach(event => {
+        if (event.scheduleId === email) {
+          let eventStart = moment(event.startDateTime);
+          let eventEnd = moment(event.endDateTime);
+  
+          if (startTime.isBefore(eventEnd) && endTime.isAfter(eventStart)) {
+            if (startTime.isBefore(eventStart)) {
+              result.push({
+                start: startTime.format(),
+                end: eventStart.format()
+              });
+            }
+  
+            result.push({
+              start: moment.max(startTime, eventStart).format(),
+              end: moment.min(endTime, eventEnd).format(),
+              status: event.status
+            });
+  
+            startTime = moment.min(endTime, eventEnd);
+          }
+        }
+      });
+  
+      if (startTime.isBefore(endTime)) {
+        result.push({
+          start: startTime.format(),
+          end: endTime.format()
+        });
+      }
+    });
+  
+    return result;
+  };
+  
+  enrichedSlotsByDate.map(dateSlot => {
+    dateSlot.slots = dateSlot.slots.map(slot => {
+      slot.times = updateTimesWithStatus(slot.times, freeTentativeWEWEvents, slot.email);
+      return slot;
+    });
+    return dateSlot;
+  });
+
+
+
+  console.log("enrichedSlotsByDate after adding the status of the events:-------------")
+  console.log(enrichedSlotsByDate)
+  const ESBDWS = JSON.stringify(enrichedSlotsByDate)
+  console.log(ESBDWS)
+
+
+  
+
 
 
   function convertToAmsterdamTime(utcTimeString) {
@@ -6072,11 +5867,19 @@ async function dataForLogs(
   // console.log(dataForLogsOutput)
 
   return dataForLogsOutput;
+}catch(error){
+  console.log(`Error in dataForLogs function: ${error}`)
+}
 }
 // FUNCTION TO GENERATE THE FREE LOGS ---END---
 
+
+
 // FUNCTION TO FIND THE COMMON FREE SLOTS FOR USERS ---START---
 async function findCommonFreeTimeSlots(logData, meeting_timeZone,jsonData, currentTime) {
+
+  try {
+
   if (!logData || logData.length === 0) {
     return "No free slot(s) available for the participants, so can't get the common free slot(s)";
   }
@@ -6183,10 +5986,10 @@ async function findCommonFreeTimeSlots(logData, meeting_timeZone,jsonData, curre
       generated_at: currentTimeInTimeZone,
       slots: commonFreeSlotsWithNameAndID // Your logic to enrich slots by date
   }
-
-  
-
   return commonFreeTimeSlotsOutput;
+}catch(error){
+  console.log(`Error in findCommonFreeTimeSLots function: ${error}`)
+}
 }
 // FUNCTION TO FIND THE COMMON FREE SLOTS FOR USERS ---END---
 
